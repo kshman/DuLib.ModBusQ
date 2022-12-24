@@ -120,6 +120,9 @@
   <data name="AddressOutOfRange" xml:space="preserve">
     <value>주소가 지원 범위를 넘었어요</value>
   </data>
+  <data name="ConnectionFail" xml:space="preserve">
+    <value>연결 실패</value>
+  </data>
   <data name="ConnectionTimeout" xml:space="preserve">
     <value>연결 타임 아웃</value>
   </data>

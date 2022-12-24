@@ -7,24 +7,61 @@ namespace Du.ModBusQ;
 /// </summary>
 public static class ModBusConverter
 {
-	private static int[] TestInverse(bool inverse, int[] rs)
+	private static int[] TestInverse(bool inverse, int[] rs, int offset, int length)
 	{
-		return inverse ? rs.Reverse().ToArray() : rs;
+
+		if (length == 2)
+		{
+			return inverse ? new[]
+			{
+				rs[offset + 1],
+				rs[offset],
+			} : new[]
+			{
+				rs[offset],
+				rs[offset + 1],
+			};
+		}
+		else if (length == 4)
+		{
+			return inverse ? new[]
+			{
+				rs[offset + 3],
+				rs[offset + 2],
+				rs[offset + 1],
+				rs[offset],
+			} : new[]
+			{
+				rs[offset],
+				rs[offset + 1],
+				rs[offset + 2],
+				rs[offset + 3],
+			};
+		}
+		else if (offset == 0)
+			return inverse ? rs.Reverse().ToArray() : rs;
+		else
+		{
+			int[] ns = new int[length];
+			Array.Copy(rs, offset, ns, 0, length);
+			return inverse ? ns.Reverse().ToArray() : ns;
+		}
 	}
 
 	/// <summary>
 	/// 
 	/// </summary>
 	/// <param name="registers"></param>
+	/// <param name="offset"></param>
 	/// <param name="inverse"></param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentException"></exception>
-	public static int ToModBusInt(this int[] registers, bool inverse = false)
+	public static int ToModBusInt(this int[] registers, int offset = 0, bool inverse = false)
 	{
-		if (registers.Length != 2)
+		if (registers.Length - offset < 2)
 			throw new ArgumentException(Resources.RegisterCountIsNotTwo);
 
-		var rs = TestInverse(inverse, registers);
+		var rs = TestInverse(inverse, registers, offset, 2);
 		var bs1 = BitConverter.GetBytes(rs[1]);
 		var bs2 = BitConverter.GetBytes(rs[0]);
 
@@ -39,15 +76,16 @@ public static class ModBusConverter
 	/// 
 	/// </summary>
 	/// <param name="registers"></param>
+	/// <param name="offset"></param>
 	/// <param name="inverse"></param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentException"></exception>
-	public static long ToModBusLong(this int[] registers, bool inverse = false)
+	public static long ToModBusLong(this int[] registers, int offset = 0, bool inverse = false)
 	{
-		if (registers.Length != 4)
+		if (registers.Length - offset < 4)
 			throw new ArgumentException(Resources.RegisterCountIsNotFour);
 
-		var rs = TestInverse(inverse, registers);
+		var rs = TestInverse(inverse, registers, offset, 4);
 		var bs1 = BitConverter.GetBytes(rs[3]);
 		var bs2 = BitConverter.GetBytes(rs[2]);
 		var bs3 = BitConverter.GetBytes(rs[1]);
@@ -66,15 +104,16 @@ public static class ModBusConverter
 	/// 
 	/// </summary>
 	/// <param name="registers"></param>
+	/// <param name="offset"></param>
 	/// <param name="inverse"></param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentException"></exception>
-	public static float ToModBusFloat(this int[] registers, bool inverse = false)
+	public static float ToModBusFloat(this int[] registers, int offset = 0, bool inverse = false)
 	{
-		if (registers.Length != 2)
+		if (registers.Length - offset < 2)
 			throw new ArgumentException(Resources.RegisterCountIsNotTwo);
 
-		var rs = TestInverse(inverse, registers);
+		var rs = TestInverse(inverse, registers, offset, 2);
 		var bs1 = BitConverter.GetBytes(rs[1]);
 		var bs2 = BitConverter.GetBytes(rs[0]);
 
@@ -89,15 +128,16 @@ public static class ModBusConverter
 	/// 
 	/// </summary>
 	/// <param name="registers"></param>
+	/// <param name="offset"></param>
 	/// <param name="inverse"></param>
 	/// <returns></returns>
 	/// <exception cref="ArgumentException"></exception>
-	public static double ToModBusDouble(this int[] registers, bool inverse = false)
+	public static double ToModBusDouble(this int[] registers, int offset = 0, bool inverse = false)
 	{
-		if (registers.Length != 4)
+		if (registers.Length - offset < 4)
 			throw new ArgumentException(Resources.RegisterCountIsNotFour);
 
-		var rs = TestInverse(inverse, registers);
+		var rs = TestInverse(inverse, registers, offset, 4);
 		var bs1 = BitConverter.GetBytes(rs[3]);
 		var bs2 = BitConverter.GetBytes(rs[2]);
 		var bs3 = BitConverter.GetBytes(rs[1]);
@@ -159,13 +199,13 @@ public static class ModBusConverter
 	public static int[] ToModBusRegister(this int value, bool inverse = false)
 	{
 		var bs = BitConverter.GetBytes(value);
-		var rs = new []
+		var rs = new[]
 		{
 			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
 			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0)
 		};
 
-		return TestInverse(inverse, rs);
+		return TestInverse(inverse, rs, 0, 2);
 	}
 
 	/// <summary>
@@ -177,7 +217,7 @@ public static class ModBusConverter
 	public static int[] ToModBusRegister(this long value, bool inverse = false)
 	{
 		var bs = BitConverter.GetBytes(value);
-		var rs = new []
+		var rs = new[]
 		{
 			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
 			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0),
@@ -185,7 +225,7 @@ public static class ModBusConverter
 			BitConverter.ToInt32(new byte[] { bs[6], bs[7], 0, 0, }, 0),
 		};
 
-		return TestInverse(inverse, rs);
+		return TestInverse(inverse, rs, 0, 4);
 	}
 
 	/// <summary>
@@ -197,12 +237,12 @@ public static class ModBusConverter
 	public static int[] ToModBusRegister(this float value, bool inverse = false)
 	{
 		var bs = BitConverter.GetBytes(value);
-		var rs = new []
+		var rs = new[]
 		{
 			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
 			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0)
 		};
-		return TestInverse(inverse, rs);
+		return TestInverse(inverse, rs, 0, 2);
 	}
 
 	/// <summary>
@@ -222,7 +262,7 @@ public static class ModBusConverter
 			BitConverter.ToInt32(new byte[] { bs[6], bs[7], 0, 0, }, 0),
 		};
 
-		return TestInverse(inverse, rs);
+		return TestInverse(inverse, rs, 0, 4);
 	}
 
 	/// <summary>

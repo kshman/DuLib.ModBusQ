@@ -70,6 +70,15 @@ namespace Du.Properties {
         }
         
         /// <summary>
+        ///   연결 실패과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string ConnectionFail {
+            get {
+                return ResourceManager.GetString("ConnectionFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   연결 타임 아웃과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string ConnectionTimeout {

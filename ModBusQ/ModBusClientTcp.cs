@@ -72,7 +72,7 @@ public class ModBusClientTcp : ModBusClientIp
 	/// <inheritdoc/>
 	public override void Open()
 	{
-		
+
 		_lg?.MethodEnter("ModBusClientTcp.Open");
 
 		InternalOpen();
@@ -115,9 +115,16 @@ public class ModBusClientTcp : ModBusClientIp
 		if (!res.AsyncWaitHandle.WaitOne(ConnectionTimeout))
 			throw new ModBusConnectionException(Resources.ConnectionTimeout);
 
-		_conn.EndConnect(res);
-		_ntst = _conn.GetStream();
-		_ntst.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
+		try
+		{
+			_conn.EndConnect(res);
+			_ntst = _conn.GetStream();
+			_ntst.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
+		}
+		catch (Exception ex)
+		{
+			throw new ModBusConnectionException(Resources.ConnectionFail, ex);
+		}
 
 		IsConnected = true;
 		if (CanInvokeConnectionChanged)
