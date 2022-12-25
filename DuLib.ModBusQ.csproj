@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Du</RootNamespace>
     <RepositoryUrl>https://github.com/kshman/DuLib</RepositoryUrl>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>0.1.1</Version>
 

@@ -100,7 +100,7 @@ public class ModBusClientUdp : ModBusClientIp
 	private void InternalOpen()
 	{
 		if (CanInvokeConnectionChanged)
-			OnConnectionChanged(new ModBusConnectionChangedEventArg(true));
+			OnConnectionChanged(new ModBusConnectionChangedEventArgs(true));
 	}
 
 	/// <inheritdoc/>
@@ -109,7 +109,7 @@ public class ModBusClientUdp : ModBusClientIp
 		_lg?.MethodEnter("ModBusClientUdp.Close");
 
 		if (CanInvokeConnectionChanged)
-			OnConnectionChanged(new ModBusConnectionChangedEventArg(false));
+			OnConnectionChanged(new ModBusConnectionChangedEventArgs(false));
 
 		_lg?.MethodLeave("ModBusClientUdp.Close");
 	}
@@ -120,7 +120,7 @@ public class ModBusClientUdp : ModBusClientIp
 		var ep = new IPEndPoint(Address, Port);
 		udp.Send(send_buffer, send_buffer.Length, ep);
 		if (CanInvokeAfterWrite)
-			OnAfterWrite(new ModBusReadWriteEventArg(send_buffer));
+			OnAfterWrite(new ModBusReadWriteEventArgs(send_buffer));
 
 		if (udp.Client.LocalEndPoint is not IPEndPoint lep)
 			throw new UnreachableException(Resources.UdpUnreachableDestination);
@@ -129,7 +129,7 @@ public class ModBusClientUdp : ModBusClientIp
 		var rep = new IPEndPoint(Address, lep.Port);
 		var read_buffer = udp.Receive(ref rep);
 		if (CanInvokeAfterRead)
-			OnAfterRead(new ModBusReadWriteEventArg(read_buffer));
+			OnAfterRead(new ModBusReadWriteEventArgs(read_buffer));
 
 		ThrowIf.ReadError(read_buffer, channel);
 

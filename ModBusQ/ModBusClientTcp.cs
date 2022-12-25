@@ -128,7 +128,7 @@ public class ModBusClientTcp : ModBusClientIp
 
 		IsConnected = true;
 		if (CanInvokeConnectionChanged)
-			OnConnectionChanged(new ModBusConnectionChangedEventArg(true));
+			OnConnectionChanged(new ModBusConnectionChangedEventArgs(true));
 	}
 
 	/// <inheritdoc/>
@@ -141,7 +141,7 @@ public class ModBusClientTcp : ModBusClientIp
 
 		IsConnected = false;
 		if (CanInvokeConnectionChanged)
-			OnConnectionChanged(new ModBusConnectionChangedEventArg(false));
+			OnConnectionChanged(new ModBusConnectionChangedEventArgs(false));
 
 		_lg?.MethodLeave("ModBusClientTcp.Close");
 	}
@@ -154,14 +154,14 @@ public class ModBusClientTcp : ModBusClientIp
 		{
 			_ntst.StreamWrite(send_buffer);
 			if (CanInvokeAfterWrite)
-				OnAfterWrite(new ModBusReadWriteEventArg(send_buffer));
+				OnAfterWrite(new ModBusReadWriteEventArgs(send_buffer));
 
 			var read_buffer = _ntst.StreamRead(size, out var len);
 			if (CanInvokeAfterRead)
 			{
 				var copy = new byte[len];
 				Array.Copy(read_buffer, 0, copy, 0, len);
-				OnAfterRead(new ModBusReadWriteEventArg(copy));
+				OnAfterRead(new ModBusReadWriteEventArgs(copy));
 			}
 
 			ThrowIf.ReadError(read_buffer, function);
