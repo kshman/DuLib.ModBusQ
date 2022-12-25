@@ -1,8 +1,6 @@
 ﻿using System.Net.Sockets;
 using Du.ModBusQ.Suppliment;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using System.Net.NetworkInformation;
 
 namespace Du.ModBusQ;
 
@@ -11,8 +9,6 @@ namespace Du.ModBusQ;
 /// </summary>
 public class ModBusServerTcp : ModBusServerIp
 {
-	private readonly ILogger? _lg;
-
 	private readonly object _lock = new();
 	private CancellationTokenSource _ctsrc = new();
 
@@ -33,15 +29,13 @@ public class ModBusServerTcp : ModBusServerIp
 	/// <param name="port"></param>
 	/// <param name="logger"></param>
 	public ModBusServerTcp(int port = 502, ILogger? logger = null)
-		: base(port)
+		: base(port, logger)
 	{
-		_lg = logger;
 	}
 
 	/// <inheritdoc/>
 	protected override void Dispose(bool disposing)
 	{
-		throw new NotImplementedException();
 	}
 
 	/// <inheritdoc/>
@@ -104,9 +98,7 @@ public class ModBusServerTcp : ModBusServerIp
 			return;
 		}
 
-		//var bs = new byte[count];
-		//Buffer.BlockCopy(state.Buffer, 0, bs, 0, count);
-		InternalParseReceived(state, count);
+		InternalHandleRequest(state);
 
 		try
 		{
@@ -141,16 +133,19 @@ public class ModBusServerTcp : ModBusServerIp
 	{
 		_ctsrc.Cancel();
 
+		_listener?.Stop();
+
 		foreach (var c in _clients)
 			c.Stream.Close();
-		_listener?.Stop();
+		_clients.Clear();
 
 		_ctsrc = new CancellationTokenSource();
 	}
 
 	//
-	private void InternalParseReceived(TcpClientState state, int length)
+	private void InternalHandleRequest(TcpClientState state)
 	{
-		
+		var rsp = HandleRequest(state.Buffer);
+		state.Stream.Write(rsp.Buffer, 0, rsp.Buffer.Length);
 	}
 }

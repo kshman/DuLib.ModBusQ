@@ -16,4 +16,10 @@ public interface IModBusServer : IDisposable
 	TimeSpan ConnectionTimeout { get; set; }
 	/// <summary>읽기 시간 제한</summary>
 	TimeSpan ReceiveTimeout { get; set; }
+
+	void Start();
+	void Stop();
+
+	void SetFunctionEnable(ModBusFunction function, bool value);
+	bool IsFunctionEnable(ModBusFunction function);
 }

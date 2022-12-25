@@ -40,23 +40,8 @@ public class ModBusConnectionChangedEventArgs : EventArgs
 }
 
 /// <summary>
-/// 개수를 알려줄 때 필요한 이벤트
+/// 서버의 클라이언트 이벤트
 /// </summary>
-public class ModBusCountEventArgs : EventArgs
-{
-	/// <summary>개수</summary>
-	public int Count { get; init; }
-
-	/// <summary>
-	/// 새 인스턴스를 만들어요
-	/// </summary>
-	/// <param name="count"></param>
-	public ModBusCountEventArgs(int count)
-	{
-		Count = count;
-	}
-}
-
 public class ModBusClientEventArgs : EventArgs
 {
 	public int Count { get; init; }
@@ -70,5 +55,20 @@ public class ModBusClientEventArgs : EventArgs
 
 		Address = remoteEp.Address;
 		Port = remoteEp.Port;
+	}
+}
+
+/// <summary>
+/// 서버의 주소 기반 데이터 처리 Write~ 시리즈
+/// </summary>
+public class ModBusAddressCountEventArgs : EventArgs
+{
+	public int Address { get; init; }
+	public int Count { get; init; }
+
+	public ModBusAddressCountEventArgs(int address, int count)
+	{
+		Address = address;
+		Count = count;
 	}
 }
