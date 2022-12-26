@@ -4,9 +4,9 @@ using System.Net.Sockets;
 namespace Du.ModBusQ;
 
 /// <summary>
-/// 보내거나 받을 때 발생하는 이벤트 인수
+/// 버퍼를 사용할 때 발생하는 이벤트 인수
 /// </summary>
-public class ModBusReadWriteEventArgs : EventArgs
+public class ModBusBufferedEventArgs : EventArgs
 {
 	/// <summary>버퍼</summary>
 	public IReadOnlyList<byte> Buffer { get; init; }
@@ -15,27 +15,30 @@ public class ModBusReadWriteEventArgs : EventArgs
 	/// 새 인스턴스를 만들어요
 	/// </summary>
 	/// <param name="buffer"></param>
-	public ModBusReadWriteEventArgs(IReadOnlyList<byte> buffer)
+	public ModBusBufferedEventArgs(IReadOnlyList<byte> buffer)
 	{
 		Buffer = buffer;
 	}
 }
 
 /// <summary>
-/// 접속 상태가 바꼈을 때 발생하는 이벤트 인수
+/// 상태가 바꼈을 때 발생하는 이벤트 인수
 /// </summary>
-public class ModBusConnectionChangedEventArgs : EventArgs
+public class ModBusStateChangedEventArgs : EventArgs
 {
+	/// <summary>상태</summary>
+	public bool State { get; init; }
+
 	/// <summary>커넥션 상태</summary>
-	public bool IsConnected { get; init; }
+	public bool IsConnected => State;
 
 	/// <summary>
 	/// 새 인스턴스를 만들어요
 	/// </summary>
-	/// <param name="isConnected"></param>
-	public ModBusConnectionChangedEventArgs(bool isConnected)
+	/// <param name="state"></param>
+	public ModBusStateChangedEventArgs(bool state)
 	{
-		IsConnected = isConnected;
+		State = state;
 	}
 }
 
@@ -57,13 +60,15 @@ public class ModBusClientEventArgs : EventArgs
 /// <summary>
 /// 서버의 주소 기반 데이터 처리 Write~ 시리즈
 /// </summary>
-public class ModBusAddressCountEventArgs : EventArgs
+public class ModBusAddressEventArgs : EventArgs
 {
+	public int DeviceId { get; init; }
 	public int Address { get; init; }
 	public int Count { get; init; }
 
-	public ModBusAddressCountEventArgs(int address, int count)
+	public ModBusAddressEventArgs(int devId, int address, int count)
 	{
+		DeviceId = devId;
 		Address = address;
 		Count = count;
 	}

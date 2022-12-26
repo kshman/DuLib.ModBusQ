@@ -23,11 +23,11 @@ public abstract class ModBusClientIp : IModBusClient
 	public TimeSpan ReceiveTimeout { get; set; } = Timeout.InfiniteTimeSpan;
 
 	/// <summary>데이터를 받았을 때 처리 핸들러</summary>
-	public event EventHandler<ModBusReadWriteEventArgs>? AfterRead;
+	public event EventHandler<ModBusBufferedEventArgs>? AfterRead;
 	/// <summary>데이터를 보냈을 때 처리 핸들러</summary>
-	public event EventHandler<ModBusReadWriteEventArgs>? AfterWrite;
+	public event EventHandler<ModBusBufferedEventArgs>? AfterWrite;
 	/// <summary>커넥션이 변경됐을 때 처리 핸들러</summary>
-	public event EventHandler<ModBusConnectionChangedEventArgs>? ConnectionChanged;
+	public event EventHandler<ModBusStateChangedEventArgs>? ConnectionChanged;
 
 	/// <summary>
 	/// 새 인스턴스를 만들어요
@@ -103,7 +103,7 @@ public abstract class ModBusClientIp : IModBusClient
 	/// 읽고난 뒤 대리자 호출
 	/// </summary>
 	/// <param name="e"></param>
-	protected virtual void OnAfterRead(ModBusReadWriteEventArgs e)
+	protected virtual void OnAfterRead(ModBusBufferedEventArgs e)
 	{
 		AfterRead?.Invoke(this, e);
 	}
@@ -112,7 +112,7 @@ public abstract class ModBusClientIp : IModBusClient
 	/// 쓰고난 뒤 대리자 호출
 	/// </summary>
 	/// <param name="e"></param>
-	protected virtual void OnAfterWrite(ModBusReadWriteEventArgs e)
+	protected virtual void OnAfterWrite(ModBusBufferedEventArgs e)
 	{
 		AfterWrite?.Invoke(this, e);
 	}
@@ -121,7 +121,7 @@ public abstract class ModBusClientIp : IModBusClient
 	/// 접속 상태가 바뀌면 호출
 	/// </summary>
 	/// <param name="e"></param>
-	protected virtual void OnConnectionChanged(ModBusConnectionChangedEventArgs e)
+	protected virtual void OnConnectionChanged(ModBusStateChangedEventArgs e)
 	{
 		ConnectionChanged?.Invoke(this, e);
 	}

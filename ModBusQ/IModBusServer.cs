@@ -23,6 +23,9 @@ public interface IModBusServer : IDisposable
 	void SetFunctionEnable(ModBusFunction function, bool value);
 	bool IsFunctionEnable(ModBusFunction function);
 
-	void SetCoils(int address, params bool[] values);
-	void SetHoldingRegisters(int address, params int[] values);
+	bool AddDevice(int devId);
+	bool RemoveDevice(int devId);
+
+	void SetCoils(int devId, int address, params bool[] values);
+	void SetHoldingRegisters(int devId, int address, params int[] values);
 }

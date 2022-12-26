@@ -1,4 +1,5 @@
-﻿using Du.ModBusQ.Suppliment;
+﻿using System.Collections.Concurrent;
+using Du.ModBusQ.Suppliment;
 using Microsoft.Extensions.Logging;
 
 namespace Du.ModBusQ;
@@ -11,13 +12,7 @@ public abstract class ModBusServer : IModBusServer
 	/// <summary></summary>
 	protected readonly ILogger? _lg;
 
-	private readonly object _lock = new();
-
-	private readonly HashSet<int> _coils = new();
-	private readonly HashSet<int> _discrete_inputs = new();
-	private readonly Dictionary<int, short> _hold_registers = new();
-	private readonly Dictionary<int, short> _input_registers = new();
-
+	private readonly ConcurrentDictionary<int, Device> _devices = new();
 	private int _func_enable = int.MaxValue;
 
 	/// <inheritdoc/>
@@ -34,9 +29,9 @@ public abstract class ModBusServer : IModBusServer
 	public TimeSpan ReceiveTimeout { get; set; } = Timeout.InfiniteTimeSpan;
 
 	/// <summary></summary>
-	public event EventHandler<ModBusAddressCountEventArgs>? CoilsChanged;
+	public event EventHandler<ModBusAddressEventArgs>? CoilsChanged;
 	/// <summary></summary>
-	public event EventHandler<ModBusAddressCountEventArgs>? HoldingRegistersChanged;
+	public event EventHandler<ModBusAddressEventArgs>? HoldingRegistersChanged;
 	/// <summary></summary>
 	public event EventHandler<ModBusClientEventArgs>? ClientConnected;
 	/// <summary></summary>
@@ -52,9 +47,9 @@ public abstract class ModBusServer : IModBusServer
 	protected bool CanInvokeClientDisconnected => ClientDisconnected != null;
 
 	/// <summary></summary>
-	protected void OnCoilsChanged(ModBusAddressCountEventArgs e) => CoilsChanged?.Invoke(this, e);
+	protected void OnCoilsChanged(ModBusAddressEventArgs e) => CoilsChanged?.Invoke(this, e);
 	/// <summary></summary>
-	protected void OnHoldingRegistersChanged(ModBusAddressCountEventArgs e) => HoldingRegistersChanged?.Invoke(this, e);
+	protected void OnHoldingRegistersChanged(ModBusAddressEventArgs e) => HoldingRegistersChanged?.Invoke(this, e);
 	/// <summary></summary>
 	protected void OnClientConnected(ModBusClientEventArgs e) => ClientConnected?.Invoke(this, e);
 	/// <summary></summary>
@@ -67,6 +62,10 @@ public abstract class ModBusServer : IModBusServer
 	protected ModBusServer(ILogger? logger)
 	{
 		_lg = logger;
+
+		// 디바이스 두개 만들어 놓기
+		AddDevice(0);
+		AddDevice(1);
 	}
 
 	/// <summary>
@@ -147,46 +146,46 @@ public abstract class ModBusServer : IModBusServer
 		return InternalHandleRequest(new Request(buffer));
 	}
 
-		//
+	//
 	private Response InternalHandleRequest(Request req)
 	{
+		if (!_devices.TryGetValue(req.Identifier, out var device))
+			return new Response(req, ModBusErrorCode.SlaveDeviceFailure);
+
 		if (!IsFunctionEnable((ModBusFunction)req.Function))
 			return new Response(req, ModBusErrorCode.IllegalFunction);
 
 		return ((ModBusFunction)req.Function) switch
 		{
-			ModBusFunction.ReadCoils => InternalReadCoils(req),
-			ModBusFunction.ReadDiscreteInputs => InternalReadDiscreteInputs(req),
-			ModBusFunction.ReadHoldingRegisters => InternalReadHoldingRegisters(req),
-			ModBusFunction.ReadInputRegisters => InternalReadInputRegisters(req),
-			ModBusFunction.WriteSingleCoil => InternalWriteSingleCoil(req),
-			ModBusFunction.WriteSingleRegister => InternalWriteSingleRegister(req),
-			ModBusFunction.WriteMultipleCoils => InternalWriteMultipleCoils(req),
-			ModBusFunction.WriteMultipleRegisters => InternalWriteMultipleRegister(req),
+			ModBusFunction.ReadCoils => InternalReadCoils(device, req),
+			ModBusFunction.ReadDiscreteInputs => InternalReadDiscreteInputs(device, req),
+			ModBusFunction.ReadHoldingRegisters => InternalReadHoldingRegisters(device, req),
+			ModBusFunction.ReadInputRegisters => InternalReadInputRegisters(device, req),
+			ModBusFunction.WriteSingleCoil => InternalWriteSingleCoil(device, req),
+			ModBusFunction.WriteSingleRegister => InternalWriteSingleRegister(device, req),
+			ModBusFunction.WriteMultipleCoils => InternalWriteMultipleCoils(device, req),
+			ModBusFunction.WriteMultipleRegisters => InternalWriteMultipleRegister(device, req),
 			_ => new Response(req, ModBusErrorCode.IllegalFunction),
 		};
 	}
 
 	//
-	private Response InternalReadCoils(Request req)
+	private Response InternalReadCoils(Device dev, Request req)
 	{
 		var rsp = new Response(req, req.QuantityForBool);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
+			for (var i = 0; i < req.Quantity; i++)
 			{
-				for (var i = 0; i < req.Quantity; i++)
-				{
-					var addr = req.Address + i;
-					if (!_coils.TryGetValue(addr, out _))
-						continue;
+				var addr = req.Address + i;
+				if (!dev.GetCoil(addr))
+					continue;
 
-					var n = i / 8;
-					var d = i % 8;
-					var mask = (byte)Math.Pow(2, d);
-					rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
-				}
+				var n = i / 8;
+				var d = i % 8;
+				var mask = (byte)Math.Pow(2, d);
+				rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
 			}
 		}
 
@@ -194,25 +193,22 @@ public abstract class ModBusServer : IModBusServer
 	}
 
 	//
-	private Response InternalReadDiscreteInputs(Request req)
+	private Response InternalReadDiscreteInputs(Device dev, Request req)
 	{
 		var rsp = new Response(req, req.QuantityForBool);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
+			for (var i = 0; i < req.Quantity; i++)
 			{
-				for (var i = 0; i < req.Quantity; i++)
-				{
-					var addr = req.Address + i;
-					if (!_discrete_inputs.TryGetValue(addr, out _))
-						continue;
+				var addr = req.Address + i;
+				if (!dev.GetDiscreteInput(addr))
+					continue;
 
-					var n = i / 8;
-					var d = i % 8;
-					var mask = (byte)Math.Pow(2, d);
-					rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
-				}
+				var n = i / 8;
+				var d = i % 8;
+				var mask = (byte)Math.Pow(2, d);
+				rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
 			}
 		}
 
@@ -220,22 +216,18 @@ public abstract class ModBusServer : IModBusServer
 	}
 
 	//
-	private Response InternalReadHoldingRegisters(Request req)
+	private Response InternalReadHoldingRegisters(Device dev, Request req)
 	{
 		var rsp = new Response(req, req.QuantityForUshort, 125);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
+			for (var i = 0; i < req.Quantity; i++)
 			{
-				for (var i = 0; i < req.Quantity; i++)
-				{
-					if (!_hold_registers.TryGetValue(req.Address + i, out var r))
-						r = 0;
-					var bs = BitConverter.GetBytes(r);
-					rsp.Buffer[9 + i * 2 + 0] = bs[1];
-					rsp.Buffer[9 + i * 2 + 1] = bs[0];
-				}
+				var r = dev.GetHoldingRegister(req.Address + i);
+				var bs = BitConverter.GetBytes(r);
+				rsp.Buffer[9 + i * 2 + 0] = bs[1];
+				rsp.Buffer[9 + i * 2 + 1] = bs[0];
 			}
 		}
 
@@ -243,22 +235,18 @@ public abstract class ModBusServer : IModBusServer
 	}
 
 	//
-	private Response InternalReadInputRegisters(Request req)
+	private Response InternalReadInputRegisters(Device dev, Request req)
 	{
 		var rsp = new Response(req, req.QuantityForUshort, 125);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
+			for (var i = 0; i < req.Quantity; i++)
 			{
-				for (var i = 0; i < req.Quantity; i++)
-				{
-					if (!_input_registers.TryGetValue(req.Address + i, out var r))
-						r = 0;
-					var bs = BitConverter.GetBytes(r);
-					rsp.Buffer[9 + i * 2 + 0] = bs[1];
-					rsp.Buffer[9 + i * 2 + 1] = bs[0];
-				}
+				var r = dev.GetInputRegister(req.Address + i);
+				var bs = BitConverter.GetBytes(r);
+				rsp.Buffer[9 + i * 2 + 0] = bs[1];
+				rsp.Buffer[9 + i * 2 + 1] = bs[0];
 			}
 		}
 
@@ -266,7 +254,7 @@ public abstract class ModBusServer : IModBusServer
 	}
 
 	//
-	private Response InternalWriteSingleCoil(Request req)
+	private Response InternalWriteSingleCoil(Device dev, Request req)
 	{
 		var value = req.Data[0];
 
@@ -277,120 +265,113 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
-			{
-				if (value == 0)
-					_coils.Remove(req.Address);
-				else
-					_coils.Add(req.Address);
-			}
+			dev.SetCoil(req.Address, value != 0);
 
 			rsp.AddWriteResponse(value);
 
-			CoilsChanged?.Invoke(this, new ModBusAddressCountEventArgs(req.Address, 1));
+			if (CanInvokeCoilsChanged)
+				OnCoilsChanged(new ModBusAddressEventArgs(dev.Id, req.Address, 1));
 		}
 
 		return rsp;
 	}
 
 	//
-	private Response InternalWriteSingleRegister(Request req)
+	private Response InternalWriteSingleRegister(Device dev, Request req)
 	{
 		var rsp = new Response(req, 3, 128);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
-				_hold_registers[req.Address] = (short)req.Data[0];
+			dev.SetHoldingRegister(req.Address, req.Data[0]);
 
 			rsp.AddWriteResponse(req.Data[0]);
 
-			HoldingRegistersChanged?.Invoke(this, new ModBusAddressCountEventArgs(req.Address, 1));
+			if (CanInvokeHoldingRegistersChanged)
+				OnHoldingRegistersChanged(new ModBusAddressEventArgs(dev.Id, req.Address, 1));
 		}
 
 		return rsp;
 	}
 
 	//
-	private Response InternalWriteMultipleCoils(Request req)
+	private Response InternalWriteMultipleCoils(Device dev, Request req)
 	{
 		var rsp = new Response(req, 3, 2000);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
+			for (var i = 0; i < req.Quantity; i++)
 			{
-				for (var i = 0; i < req.Quantity; i++)
-				{
-					var n = 1 << i % 16;
-					var b = (req.Data[i / 16] & n) != 0;
-					if (b)
-						_coils.Remove(req.Address + i);
-					else
-						_coils.Add(req.Address + i);
-				}
+				var n = 1 << i % 16;
+				var b = (req.Data[i / 16] & n) != 0;
+				dev.SetCoil(req.Address + i, b);
 			}
 
 			rsp.AddWriteResponse(req.Quantity);
 
-			CoilsChanged?.Invoke(this, new ModBusAddressCountEventArgs(req.Address, req.Quantity));
+			if (CanInvokeCoilsChanged)
+				OnCoilsChanged(new ModBusAddressEventArgs(dev.Id, req.Address, req.Quantity));
 		}
 
 		return rsp;
 	}
 
 	//
-	private Response InternalWriteMultipleRegister(Request req)
+	private Response InternalWriteMultipleRegister(Device dev, Request req)
 	{
 		var rsp = new Response(req, 3, 2000);
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			lock (_lock)
+			for (var i = 0; i < req.Quantity; i++)
 			{
-				for (var i = 0; i < req.Quantity; i++)
-				{
-					var value = req.Data[i];
-					_hold_registers[req.Address + i] = (short)value;
-				}
+				var value = req.Data[i];
+				dev.SetHoldingRegister(req.Address + i, value);
 			}
 
 			rsp.AddWriteResponse(req.Quantity);
 
-			HoldingRegistersChanged?.Invoke(this, new ModBusAddressCountEventArgs(req.Address, req.Quantity));
+			if (CanInvokeHoldingRegistersChanged)
+				OnHoldingRegistersChanged(new ModBusAddressEventArgs(dev.Id, req.Address, req.Quantity));
 		}
 
 		return rsp;
 	}
 
-	public void SetCoils(int address, params bool[] values)
+	public bool AddDevice(int devId)
 	{
-		if (values.Length == 0)
-			return;
-		if (address < 0 || address + values.Length > 65535)
-			return;
-
-		lock (_lock)
-		{
-			for (var i=0; i<values.Length; i++)
-			{
-				if (values[i])
-					_coils.Add(address + i);
-			}
-		}
+		return _devices.TryAdd(devId, new Device(devId));
 	}
 
-	public void SetHoldingRegisters(int address, params int[] values)
+	public bool RemoveDevice(int devId)
+	{
+		return _devices.TryRemove(devId, out _);
+	}
+
+	public void SetCoils(int devId, int address, params bool[] values)
 	{
 		if (values.Length == 0)
-			return;
+			throw new ArgumentException(nameof(values));
 		if (address < 0 || address + values.Length > 65535)
-			return;
+			throw new ArgumentException(nameof(address));
 
-		lock (_lock)
-		{
-			for (var i = 0; i < values.Length; i++)
-				_hold_registers[address + i] = (short)values[i];
-		}
+		if (!_devices.TryGetValue(devId, out var device))
+			throw new ArgumentException(nameof(devId));
+
+		device.SetCoils(address, values);
+	}
+
+	public void SetHoldingRegisters(int devId, int address, params int[] values)
+	{
+		if (values.Length == 0)
+			throw new ArgumentException(nameof(values));
+		if (address < 0 || address + values.Length > 65535)
+			throw new ArgumentException(nameof(address));
+
+		if (!_devices.TryGetValue(devId, out var device))
+			throw new ArgumentException(nameof(devId));
+
+		device.SetHoldingRegisters(address, values);
 	}
 }

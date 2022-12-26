@@ -106,6 +106,33 @@ namespace Du.Properties {
         }
         
         /// <summary>
+        ///   읽으러 들어오는데 예외가 있어요과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string ExceptionEnterRead {
+            get {
+                return ResourceManager.GetString("ExceptionEnterRead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   읽으러 들어오는데 예외가 있어요과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string ExceptionEnterUpgradableRead {
+            get {
+                return ResourceManager.GetString("ExceptionEnterUpgradableRead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   쓰러 들어오는데 에외가 있어요과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string ExceptionEnterWrite {
+            get {
+                return ResourceManager.GetString("ExceptionEnterWrite", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   지원하지 않는 기능 코드예요과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string FunctionCodeNotSupport {

@@ -132,6 +132,15 @@
   <data name="ErrorOnRead" xml:space="preserve">
     <value>읽기에 오류가 있어요</value>
   </data>
+  <data name="ExceptionEnterRead" xml:space="preserve">
+    <value>읽으러 들어오는데 예외가 있어요</value>
+  </data>
+  <data name="ExceptionEnterUpgradableRead" xml:space="preserve">
+    <value>읽으러 들어오는데 예외가 있어요</value>
+  </data>
+  <data name="ExceptionEnterWrite" xml:space="preserve">
+    <value>쓰러 들어오는데 에외가 있어요</value>
+  </data>
   <data name="FunctionCodeNotSupport" xml:space="preserve">
     <value>지원하지 않는 기능 코드예요</value>
   </data>
