@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Du.ModBusQ.Suppliment;
+using Du.Properties;
 using Microsoft.Extensions.Logging;
 
 namespace Du.ModBusQ;
@@ -17,41 +18,40 @@ public abstract class ModBusServer : IModBusServer
 
 	/// <inheritdoc/>
 	public abstract ModBusConnection ConnectionType { get; }
+
 	/// <inheritdoc/>
-	public abstract bool IsRunning { get; protected set; }
+	public virtual bool IsRunning { get; protected set; }
 
 	/// <inheritdoc/>
 	public DateTime StartTime { get; protected set; }
 
 	/// <inheritdoc/>
 	public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
 	/// <inheritdoc/>
 	public TimeSpan ReceiveTimeout { get; set; } = Timeout.InfiniteTimeSpan;
 
 	/// <summary></summary>
 	public event EventHandler<ModBusAddressEventArgs>? CoilsChanged;
+
 	/// <summary></summary>
 	public event EventHandler<ModBusAddressEventArgs>? HoldingRegistersChanged;
+
 	/// <summary></summary>
 	public event EventHandler<ModBusClientEventArgs>? ClientConnected;
+
 	/// <summary></summary>
 	public event EventHandler<ModBusClientEventArgs>? ClientDisconnected;
 
 	/// <summary></summary>
-	protected bool CanInvokeCoilsChanged => CoilsChanged != null;
-	/// <summary></summary>
-	protected bool CanInvokeHoldingRegistersChanged => HoldingRegistersChanged != null;
-	/// <summary></summary>
-	protected bool CanInvokeClientConnected => ClientConnected != null;
-	/// <summary></summary>
-	protected bool CanInvokeClientDisconnected => ClientDisconnected != null;
+	protected void OnCoilsChanged(ModBusAddressEventArgs e) => CoilsChanged?.Invoke(this, e);
 
 	/// <summary></summary>
-	protected void OnCoilsChanged(ModBusAddressEventArgs e) => CoilsChanged?.Invoke(this, e);
-	/// <summary></summary>
 	protected void OnHoldingRegistersChanged(ModBusAddressEventArgs e) => HoldingRegistersChanged?.Invoke(this, e);
+
 	/// <summary></summary>
 	protected void OnClientConnected(ModBusClientEventArgs e) => ClientConnected?.Invoke(this, e);
+
 	/// <summary></summary>
 	protected void OnClientDisconnected(ModBusClientEventArgs e) => ClientDisconnected?.Invoke(this, e);
 
@@ -132,8 +132,16 @@ public abstract class ModBusServer : IModBusServer
 	/// <returns></returns>
 	protected byte[] HandleRequestBuffer(byte[] buffer)
 	{
-		var rsp = InternalHandleRequest(new Request(buffer));
-		return rsp.Buffer;
+		_lg?.MethodEnter("ModBusServer.HandleRequestBuffer");
+		try
+		{
+			var rsp = InternalHandleRequest(new Request(buffer));
+			return rsp.Buffer;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.HandleRequestBuffer");
+		}
 	}
 
 	/// <summary>
@@ -143,7 +151,15 @@ public abstract class ModBusServer : IModBusServer
 	/// <returns></returns>
 	protected object HandleRequest(byte[] buffer)
 	{
-		return InternalHandleRequest(new Request(buffer));
+		_lg?.MethodEnter("ModBusServer.HandleRequest");
+		try
+		{
+			return InternalHandleRequest(new Request(buffer));
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.HandleRequest");
+		}
 	}
 
 	//
@@ -172,171 +188,231 @@ public abstract class ModBusServer : IModBusServer
 	//
 	private Response InternalReadCoils(Device dev, Request req)
 	{
-		var rsp = new Response(req, req.QuantityForBool);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.ReadCoils");
+		try
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			var rsp = new Response(req, req.QuantityForBool);
+
+			if (rsp.Error == ModBusErrorCode.NoError)
 			{
-				var addr = req.Address + i;
-				if (!dev.GetCoil(addr))
-					continue;
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var addr = req.Address + i;
+					if (!dev.GetCoil(addr))
+						continue;
 
-				var n = i / 8;
-				var d = i % 8;
-				var mask = (byte)Math.Pow(2, d);
-				rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
+					var n = i / 8;
+					var d = i % 8;
+					var mask = (byte)Math.Pow(2, d);
+					rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
+				}
 			}
-		}
 
-		return rsp;
+			return rsp;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.ReadCoils");
+		}
 	}
 
 	//
 	private Response InternalReadDiscreteInputs(Device dev, Request req)
 	{
-		var rsp = new Response(req, req.QuantityForBool);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.ReadDiscreteInputs");
+		try
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			var rsp = new Response(req, req.QuantityForBool);
+
+			if (rsp.Error == ModBusErrorCode.NoError)
 			{
-				var addr = req.Address + i;
-				if (!dev.GetDiscreteInput(addr))
-					continue;
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var addr = req.Address + i;
+					if (!dev.GetDiscreteInput(addr))
+						continue;
 
-				var n = i / 8;
-				var d = i % 8;
-				var mask = (byte)Math.Pow(2, d);
-				rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
+					var n = i / 8;
+					var d = i % 8;
+					var mask = (byte)Math.Pow(2, d);
+					rsp.Buffer[9 + n] = (byte)(rsp.Buffer[9 + n] | mask);
+				}
 			}
-		}
 
-		return rsp;
+			return rsp;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.ReadDiscreteInputs");
+		}
 	}
 
 	//
 	private Response InternalReadHoldingRegisters(Device dev, Request req)
 	{
-		var rsp = new Response(req, req.QuantityForUshort, 125);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.ReadHoldingRegisters");
+		try
 		{
-			for (var i = 0; i < req.Quantity; i++)
-			{
-				var r = dev.GetHoldingRegister(req.Address + i);
-				var bs = BitConverter.GetBytes(r);
-				rsp.Buffer[9 + i * 2 + 0] = bs[1];
-				rsp.Buffer[9 + i * 2 + 1] = bs[0];
-			}
-		}
+			var rsp = new Response(req, req.QuantityForUshort, 125);
 
-		return rsp;
+			if (rsp.Error == ModBusErrorCode.NoError)
+			{
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var r = dev.GetHoldingRegister(req.Address + i);
+					var bs = BitConverter.GetBytes(r);
+					rsp.Buffer[9 + i * 2 + 0] = bs[1];
+					rsp.Buffer[9 + i * 2 + 1] = bs[0];
+				}
+			}
+
+			return rsp;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.ReadHoldingRegisters");
+		}
 	}
 
 	//
 	private Response InternalReadInputRegisters(Device dev, Request req)
 	{
-		var rsp = new Response(req, req.QuantityForUshort, 125);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.ReadInputRegisters");
+		try
 		{
-			for (var i = 0; i < req.Quantity; i++)
-			{
-				var r = dev.GetInputRegister(req.Address + i);
-				var bs = BitConverter.GetBytes(r);
-				rsp.Buffer[9 + i * 2 + 0] = bs[1];
-				rsp.Buffer[9 + i * 2 + 1] = bs[0];
-			}
-		}
+			var rsp = new Response(req, req.QuantityForUshort, 125);
 
-		return rsp;
+			if (rsp.Error == ModBusErrorCode.NoError)
+			{
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var r = dev.GetInputRegister(req.Address + i);
+					var bs = BitConverter.GetBytes(r);
+					rsp.Buffer[9 + i * 2 + 0] = bs[1];
+					rsp.Buffer[9 + i * 2 + 1] = bs[0];
+				}
+			}
+
+			return rsp;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.ReadInputRegisters");
+		}
 	}
 
 	//
 	private Response InternalWriteSingleCoil(Device dev, Request req)
 	{
-		var value = req.Data[0];
-
-		if (value > 0 && value != 65280)
-			return new Response(req, ModBusErrorCode.IllegalDataValue);
-
-		var rsp = new Response(req, 3, 128);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.WriteSingleCoil");
+		try
 		{
-			dev.SetCoil(req.Address, value != 0);
+			var value = req.Data[0];
 
-			rsp.AddWriteResponse(value);
+			if (value > 0 && value != 65280)
+				return new Response(req, ModBusErrorCode.IllegalDataValue);
 
-			if (CanInvokeCoilsChanged)
+			var rsp = new Response(req, 3, 128);
+
+			if (rsp.Error == ModBusErrorCode.NoError)
+			{
+				dev.SetCoil(req.Address, value != 0);
+
+				rsp.AddWriteResponse(value);
+
 				OnCoilsChanged(new ModBusAddressEventArgs(dev.Id, req.Address, 1));
-		}
+			}
 
-		return rsp;
+			return rsp;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.WriteSingleCoil");
+		}
 	}
 
 	//
 	private Response InternalWriteSingleRegister(Device dev, Request req)
 	{
-		var rsp = new Response(req, 3, 128);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.WriteSingleRegister");
+		try
 		{
-			dev.SetHoldingRegister(req.Address, req.Data[0]);
+			var rsp = new Response(req, 3, 128);
 
-			rsp.AddWriteResponse(req.Data[0]);
+			if (rsp.Error == ModBusErrorCode.NoError)
+			{
+				dev.SetHoldingRegister(req.Address, req.Data[0]);
 
-			if (CanInvokeHoldingRegistersChanged)
+				rsp.AddWriteResponse(req.Data[0]);
+
 				OnHoldingRegistersChanged(new ModBusAddressEventArgs(dev.Id, req.Address, 1));
-		}
+			}
 
-		return rsp;
+			return rsp;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.WriteSingleRegister");
+		}
 	}
 
 	//
 	private Response InternalWriteMultipleCoils(Device dev, Request req)
 	{
-		var rsp = new Response(req, 3, 2000);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.WriteMultipleCoils");
+		try
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			var rsp = new Response(req, 3);
+
+			if (rsp.Error == ModBusErrorCode.NoError)
 			{
-				var n = 1 << i % 16;
-				var b = (req.Data[i / 16] & n) != 0;
-				dev.SetCoil(req.Address + i, b);
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var n = 1 << i % 16;
+					var b = (req.Data[i / 16] & n) != 0;
+					dev.SetCoil(req.Address + i, b);
+				}
+
+				rsp.AddWriteResponse(req.Quantity);
+
+				OnCoilsChanged(new ModBusAddressEventArgs(dev.Id, req.Address, req.Quantity));
 			}
 
-			rsp.AddWriteResponse(req.Quantity);
-
-			if (CanInvokeCoilsChanged)
-				OnCoilsChanged(new ModBusAddressEventArgs(dev.Id, req.Address, req.Quantity));
+			return rsp;
 		}
-
-		return rsp;
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.WriteMultipleCoils");
+		}
 	}
 
 	//
 	private Response InternalWriteMultipleRegister(Device dev, Request req)
 	{
-		var rsp = new Response(req, 3, 2000);
-
-		if (rsp.Error == ModBusErrorCode.NoError)
+		_lg?.MethodEnter("ModBusServer.WriteMultipleRegister");
+		try
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			var rsp = new Response(req, 3);
+
+			if (rsp.Error == ModBusErrorCode.NoError)
 			{
-				var value = req.Data[i];
-				dev.SetHoldingRegister(req.Address + i, value);
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var value = req.Data[i];
+					dev.SetHoldingRegister(req.Address + i, value);
+				}
+
+				rsp.AddWriteResponse(req.Quantity);
+
+				OnHoldingRegistersChanged(new ModBusAddressEventArgs(dev.Id, req.Address, req.Quantity));
 			}
 
-			rsp.AddWriteResponse(req.Quantity);
-
-			if (CanInvokeHoldingRegistersChanged)
-				OnHoldingRegistersChanged(new ModBusAddressEventArgs(dev.Id, req.Address, req.Quantity));
+			return rsp;
 		}
-
-		return rsp;
+		finally
+		{
+			_lg?.MethodLeave("ModBusServer.WriteMultipleRegister");
+		}
 	}
 
 	public bool AddDevice(int devId)
@@ -352,12 +428,12 @@ public abstract class ModBusServer : IModBusServer
 	public void SetCoils(int devId, int address, params bool[] values)
 	{
 		if (values.Length == 0)
-			throw new ArgumentException(nameof(values));
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(values));
 		if (address < 0 || address + values.Length > 65535)
-			throw new ArgumentException(nameof(address));
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
 
 		if (!_devices.TryGetValue(devId, out var device))
-			throw new ArgumentException(nameof(devId));
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
 
 		device.SetCoils(address, values);
 	}
@@ -365,12 +441,12 @@ public abstract class ModBusServer : IModBusServer
 	public void SetHoldingRegisters(int devId, int address, params int[] values)
 	{
 		if (values.Length == 0)
-			throw new ArgumentException(nameof(values));
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(values));
 		if (address < 0 || address + values.Length > 65535)
-			throw new ArgumentException(nameof(address));
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
 
 		if (!_devices.TryGetValue(devId, out var device))
-			throw new ArgumentException(nameof(devId));
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
 
 		device.SetHoldingRegisters(address, values);
 	}

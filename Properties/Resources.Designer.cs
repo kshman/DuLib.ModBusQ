@@ -106,6 +106,15 @@ namespace Du.Properties {
         }
         
         /// <summary>
+        ///   인수가 잘못됐어요과(와) 유사한 지역화된 문자열을 찾습니다.
+        /// </summary>
+        internal static string ExceptionArgument {
+            get {
+                return ResourceManager.GetString("ExceptionArgument", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   읽으러 들어오는데 예외가 있어요과(와) 유사한 지역화된 문자열을 찾습니다.
         /// </summary>
         internal static string ExceptionEnterRead {

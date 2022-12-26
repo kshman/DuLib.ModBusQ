@@ -9,46 +9,46 @@ internal static class LockerOfReaderWriter
 	{
 		if (!l.TryEnterReadLock(millisecondsTimeout))
 			throw new TimeoutException(Resources.ExceptionEnterRead);
-		return new DisposableRwls(l, DisposableRwls.Mode.Read);
+		return new DisposableRwLocks(l, DisposableRwLocks.Mode.Read);
 	}
 
 	internal static IDisposable GetReadLock(this ReaderWriterLockSlim l, TimeSpan timeSpan)
 	{
 		if (!l.TryEnterReadLock(timeSpan))
 			throw new TimeoutException(Resources.ExceptionEnterRead);
-		return new DisposableRwls(l, DisposableRwls.Mode.Read);
+		return new DisposableRwLocks(l, DisposableRwLocks.Mode.Read);
 	}
 
 	internal static IDisposable GetUpgradableReadLock(this ReaderWriterLockSlim l, int millisecondsTimeout = -1)
 	{
 		if (!l.TryEnterUpgradeableReadLock(millisecondsTimeout))
 			throw new TimeoutException(Resources.ExceptionEnterUpgradableRead);
-		return new DisposableRwls(l, DisposableRwls.Mode.UpgradableRead);
+		return new DisposableRwLocks(l, DisposableRwLocks.Mode.UpgradableRead);
 	}
 
 	internal static IDisposable GetUpgradableReadLock(this ReaderWriterLockSlim l, TimeSpan timeSpan)
 	{
 		if (!l.TryEnterUpgradeableReadLock(timeSpan))
 			throw new TimeoutException(Resources.ExceptionEnterUpgradableRead);
-		return new DisposableRwls(l, DisposableRwls.Mode.UpgradableRead);
+		return new DisposableRwLocks(l, DisposableRwLocks.Mode.UpgradableRead);
 	}
 
 	internal static IDisposable GetWriteLock(this ReaderWriterLockSlim l, int millisecondsTimeout = -1)
 	{
 		if (!l.TryEnterWriteLock(millisecondsTimeout))
 			throw new TimeoutException(Resources.ExceptionEnterWrite);
-		return new DisposableRwls(l, DisposableRwls.Mode.Write);
+		return new DisposableRwLocks(l, DisposableRwLocks.Mode.Write);
 	}
 
 	internal static IDisposable GetWriteLock(this ReaderWriterLockSlim l, TimeSpan timeSpan)
 	{
 		if (!l.TryEnterWriteLock(timeSpan))
 			throw new TimeoutException(Resources.ExceptionEnterWrite);
-		return new DisposableRwls(l, DisposableRwls.Mode.Write);
+		return new DisposableRwLocks(l, DisposableRwLocks.Mode.Write);
 	}
 }
 
-internal class DisposableRwls : IDisposable
+internal class DisposableRwLocks : IDisposable
 {
 	internal enum Mode
 	{
@@ -61,7 +61,7 @@ internal class DisposableRwls : IDisposable
 	private readonly ReaderWriterLockSlim _l;
 	private Mode _m;
 
-	public DisposableRwls(ReaderWriterLockSlim l, Mode m)
+	public DisposableRwLocks(ReaderWriterLockSlim l, Mode m)
 	{
 		_l = l;
 		_m = m;

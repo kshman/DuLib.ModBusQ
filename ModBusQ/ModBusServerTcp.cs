@@ -16,13 +16,11 @@ public class ModBusServerTcp : ModBusServerIp
 
 	private TcpListener? _listener;
 	private readonly List<TcpClientState> _clients = new();
-	private int _ccount;
 
 	/// <inheritdoc/>
 	public override ModBusConnection ConnectionType => ModBusConnection.Tcp;
-	/// <inheritdoc/>
-	public override bool IsRunning { get; protected set; }
-	/// <inheritdoc/>
+
+	/// <summary>연결 유지 시간</summary>
 	public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromHours(1);
 
 	/// <summary>
@@ -48,6 +46,8 @@ public class ModBusServerTcp : ModBusServerIp
 		if (IsRunning)
 			return;
 
+		_lg?.MethodEnter("ModBusServerTcp.Start");
+		
 		IsRunning = true;
 		StartTime = DateTime.Now;
 
@@ -56,8 +56,10 @@ public class ModBusServerTcp : ModBusServerIp
 		{
 			_listener = new TcpListener(Address, Port);
 			_listener.Start();
-			_listener.BeginAcceptTcpClient(new AsyncCallback(InternalAcceptTcpCallback), null);
+			_listener.BeginAcceptTcpClient(InternalAcceptTcpCallback, null);
 		}, _cts.Token);
+
+		_lg?.MethodLeave("ModBusServerTcp.Start");
 	}
 
 	/// <inheritdoc/>
@@ -65,6 +67,8 @@ public class ModBusServerTcp : ModBusServerIp
 	{
 		if (!IsRunning)
 			return;
+
+		_lg?.MethodEnter("ModBusServerTcp.Stop");
 
 		IsRunning = false;
 
@@ -79,26 +83,25 @@ public class ModBusServerTcp : ModBusServerIp
 				c.Stream.Close();
 			_clients.Clear();
 		}
+		
+		_lg?.MethodLeave("ModBusServerTcp.Stop");
 	}
 
 	private void InternalAcceptTcpCallback(IAsyncResult res)
 	{
-		TcpClient tcp;
 		try
 		{
-			tcp = _listener!.EndAcceptTcpClient(res);
-			_listener.BeginAcceptTcpClient(new AsyncCallback(InternalAcceptTcpCallback), null);
+			var tcp = _listener!.EndAcceptTcpClient(res);
+			_listener.BeginAcceptTcpClient(InternalAcceptTcpCallback, null);
 			tcp.ReceiveTimeout = (int)ReceiveTimeout.TotalMilliseconds;
 
 			var state = new TcpClientState(tcp);
 
-			var count = InternalCheckClient(state);
-			if (CanInvokeClientConnected)
-				OnClientConnected(new ModBusClientEventArgs(state.RemoteEndPoint));
-			_ccount = count;
+			InternalCheckClient(state);
+			OnClientConnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 
 			state.Stream.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
-			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, new AsyncCallback(InternalReadCallback), state);
+			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, InternalReadCallback, state);
 		}
 		catch (Exception ex)
 		{
@@ -119,10 +122,9 @@ public class ModBusServerTcp : ModBusServerIp
 		state.Invalidate();
 
 		// 읽기 끝
-		int count;
 		try
 		{
-			count = state.Stream.EndRead(res);
+			var count = state.Stream.EndRead(res);
 			if (count == 0)
 				throw new IOException();
 		}
@@ -146,7 +148,7 @@ public class ModBusServerTcp : ModBusServerIp
 		// 다시 읽기 시작
 		try
 		{
-			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, new AsyncCallback(InternalReadCallback), state);
+			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, InternalReadCallback, state);
 		}
 		catch (Exception)
 		{
@@ -155,7 +157,7 @@ public class ModBusServerTcp : ModBusServerIp
 		}
 	}
 
-	private int InternalCheckClient(TcpClientState state)
+	private void InternalCheckClient(TcpClientState state)
 	{
 		lock (_lock)
 		{
@@ -164,8 +166,6 @@ public class ModBusServerTcp : ModBusServerIp
 
 			var ticks = DateTime.Now.Ticks;
 			_clients.RemoveAll(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
-
-			return _clients.Count;
 		}
 	}
 
@@ -185,8 +185,7 @@ public class ModBusServerTcp : ModBusServerIp
 			if (nth >= 0)
 			{
 				// 여기 있다는 것은 접속 때 메시지를 보냈다는 이야기
-				if (CanInvokeClientDisconnected)
-					OnClientDisconnected(new ModBusClientEventArgs(state.RemoteEndPoint));
+				OnClientDisconnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 
 				_clients.RemoveAt(nth);
 			}
@@ -194,16 +193,15 @@ public class ModBusServerTcp : ModBusServerIp
 			// 겸사 겸사 다른 애들도 검사
 			var ticks = DateTime.Now.Ticks;
 			// 아래 두줄을 합치려면...?
-			var l = _clients.Where(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
-			if (l.Any())
+			var l = _clients.Where(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds).ToArray();
+			if (l.Length > 0)
 				_clients.RemoveAll(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
 
 			foreach (var c in l)
 			{
 				c.MarkDisconnected();
 
-				if (CanInvokeClientDisconnected)
-					OnClientDisconnected(new ModBusClientEventArgs(c.RemoteEndPoint));
+				OnClientDisconnected(new ModBusClientEventArgs(c.RemoteEndPoint));
 			}
 		}
 	}
