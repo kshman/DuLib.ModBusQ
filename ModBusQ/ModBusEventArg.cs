@@ -44,15 +44,11 @@ public class ModBusConnectionChangedEventArgs : EventArgs
 /// </summary>
 public class ModBusClientEventArgs : EventArgs
 {
-	public int Count { get; init; }
-
 	public IPAddress Address { get; init; }
 	public int Port { get; init; }
 
-	public ModBusClientEventArgs(int count, IPEndPoint remoteEp)
+	public ModBusClientEventArgs(IPEndPoint remoteEp)
 	{
-		Count = count;
-
 		Address = remoteEp.Address;
 		Port = remoteEp.Port;
 	}

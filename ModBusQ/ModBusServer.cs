@@ -11,10 +11,13 @@ public abstract class ModBusServer : IModBusServer
 	/// <summary></summary>
 	protected readonly ILogger? _lg;
 
+	private readonly object _lock = new();
+
 	private readonly Dictionary<int, bool> _coils = new();
 	private readonly Dictionary<int, bool> _discrete_inputs = new();
 	private readonly Dictionary<int, short> _hold_registers = new();
 	private readonly Dictionary<int, short> _input_registers = new();
+
 	private int _func_enable = int.MaxValue;
 
 	/// <inheritdoc/>
@@ -23,7 +26,7 @@ public abstract class ModBusServer : IModBusServer
 	public abstract bool IsRunning { get; protected set; }
 
 	/// <inheritdoc/>
-	public abstract DateTime StartTime { get; protected set; }
+	public DateTime StartTime { get; protected set; }
 
 	/// <inheritdoc/>
 	public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
@@ -31,13 +34,13 @@ public abstract class ModBusServer : IModBusServer
 	public TimeSpan ReceiveTimeout { get; set; } = Timeout.InfiniteTimeSpan;
 
 	/// <summary></summary>
-	public EventHandler<ModBusAddressCountEventArgs>? CoilsChanged;
+	public event EventHandler<ModBusAddressCountEventArgs>? CoilsChanged;
 	/// <summary></summary>
-	public EventHandler<ModBusAddressCountEventArgs>? HoldingRegistersChanged;
+	public event EventHandler<ModBusAddressCountEventArgs>? HoldingRegistersChanged;
 	/// <summary></summary>
-	public EventHandler<ModBusClientEventArgs>? ClientConnected;
+	public event EventHandler<ModBusClientEventArgs>? ClientConnected;
 	/// <summary></summary>
-	public EventHandler<ModBusClientEventArgs>? ClientDisconnected;
+	public event EventHandler<ModBusClientEventArgs>? ClientDisconnected;
 
 	/// <summary></summary>
 	protected bool CanInvokeCoilsChanged => CoilsChanged != null;
@@ -129,7 +132,7 @@ public abstract class ModBusServer : IModBusServer
 	/// <param name="Buffer"></param>
 	/// <returns></returns>
 	/// <exception cref="NotImplementedException"></exception>
-	protected Response HandleRequest(byte[] Buffer)
+	protected object HandleRequest(byte[] Buffer)
 	{
 		var req = new Request(Buffer);
 
@@ -157,20 +160,23 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			for (var i = 0; i < rsp.Count; i++)
+			lock (_lock)
 			{
-				byte mask = 0;
-
-				for (var p = 0; p < 8; p++)
+				for (var i = 0; i < rsp.Count; i++)
 				{
-					var seq = i * 8 + p;
-					if (_coils.TryGetValue(req.Address + seq, out var b) && b)
-						mask = (byte)(mask | 1 << p);
-					if (seq + 1 >= rsp.Length)
-						break;
-				}
+					byte mask = 0;
 
-				rsp.Buffer[9 + i] = mask;
+					for (var p = 0; p < 8; p++)
+					{
+						var seq = i * 8 + p;
+						if (_coils.TryGetValue(req.Address + seq, out var b) && b)
+							mask = (byte)(mask | 1 << p);
+						if (seq + 1 >= rsp.Length)
+							break;
+					}
+
+					rsp.Buffer[9 + i] = mask;
+				}
 			}
 		}
 
@@ -184,20 +190,23 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			for (var i = 0; i < rsp.Count; i++)
+			lock (_lock)
 			{
-				byte mask = 0;
-
-				for (var p = 0; p < 8; p++)
+				for (var i = 0; i < rsp.Count; i++)
 				{
-					var seq = i * 8 + p;
-					if (_discrete_inputs.TryGetValue(req.Address + seq, out var b) && b)
-						mask = (byte)(mask | 1 << p);
-					if (seq + 1 >= rsp.Length)
-						break;
-				}
+					byte mask = 0;
 
-				rsp.Buffer[9 + i] = mask;
+					for (var p = 0; p < 8; p++)
+					{
+						var seq = i * 8 + p;
+						if (_discrete_inputs.TryGetValue(req.Address + seq, out var b) && b)
+							mask = (byte)(mask | 1 << p);
+						if (seq + 1 >= rsp.Length)
+							break;
+					}
+
+					rsp.Buffer[9 + i] = mask;
+				}
 			}
 		}
 
@@ -211,13 +220,16 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			lock (_lock)
 			{
-				if (!_hold_registers.TryGetValue(req.Address + i, out var r))
-					r = 0;
-				var bs = BitConverter.GetBytes(r);
-				rsp.Buffer[9 + i * 2 + 0] = bs[1];
-				rsp.Buffer[9 + i * 2 + 1] = bs[0];
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					if (!_hold_registers.TryGetValue(req.Address + i, out var r))
+						r = 0;
+					var bs = BitConverter.GetBytes(r);
+					rsp.Buffer[9 + i * 2 + 0] = bs[1];
+					rsp.Buffer[9 + i * 2 + 1] = bs[0];
+				}
 			}
 		}
 
@@ -231,13 +243,16 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			lock (_lock)
 			{
-				if (!_input_registers.TryGetValue(req.Address + i, out var r))
-					r = 0;
-				var bs = BitConverter.GetBytes(r);
-				rsp.Buffer[9 + i * 2 + 0] = bs[1];
-				rsp.Buffer[9 + i * 2 + 1] = bs[0];
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					if (!_input_registers.TryGetValue(req.Address + i, out var r))
+						r = 0;
+					var bs = BitConverter.GetBytes(r);
+					rsp.Buffer[9 + i * 2 + 0] = bs[1];
+					rsp.Buffer[9 + i * 2 + 1] = bs[0];
+				}
 			}
 		}
 
@@ -256,7 +271,8 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			_coils[req.Address] = value == 65280;
+			lock (_lock)
+				_coils[req.Address] = value == 65280;
 
 			rsp.AddWriteResponse(value);
 
@@ -273,7 +289,8 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			_hold_registers[req.Address] = (short)req.Data[0];
+			lock (_lock)
+				_hold_registers[req.Address] = (short)req.Data[0];
 
 			rsp.AddWriteResponse(req.Data[0]);
 
@@ -290,11 +307,14 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			for (var i=0; i<req.Quantity; i++)
+			lock (_lock)
 			{
-				var n = 1 << i % 16;
-				var b = (req.Data[i / 16] & n) != 0;
-				_coils[req.Address + i] = b;
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var n = 1 << i % 16;
+					var b = (req.Data[i / 16] & n) != 0;
+					_coils[req.Address + i] = b;
+				}
 			}
 
 			rsp.AddWriteResponse(req.Quantity);
@@ -312,10 +332,13 @@ public abstract class ModBusServer : IModBusServer
 
 		if (rsp.Error == ModBusErrorCode.NoError)
 		{
-			for (var i = 0; i < req.Quantity; i++)
+			lock (_lock)
 			{
-				var value = req.Data[i];
-				_hold_registers[req.Address + i] = (short)value;
+				for (var i = 0; i < req.Quantity; i++)
+				{
+					var value = req.Data[i];
+					_hold_registers[req.Address + i] = (short)value;
+				}
 			}
 
 			rsp.AddWriteResponse(req.Quantity);
@@ -324,5 +347,33 @@ public abstract class ModBusServer : IModBusServer
 		}
 
 		return rsp;
+	}
+
+	public void WriteCoils(int address, params bool[] values)
+	{
+		if (values.Length == 0)
+			return;
+		if (address < 0 || address + values.Length > 65535)
+			return;
+
+		lock (_lock)
+		{
+			for (var i=0; i<values.Length; i++)
+				_coils[address + i] = values[i];
+		}
+	}
+
+	public void WriteHoldingRegisters(int address, params short[] values)
+	{
+		if (values.Length == 0)
+			return;
+		if (address < 0 || address + values.Length > 65535)
+			return;
+
+		lock (_lock)
+		{
+			for (var i = 0; i < values.Length; i++)
+				_hold_registers[address + i] = values[i];
+		}
 	}
 }

@@ -10,7 +10,9 @@ namespace Du.ModBusQ;
 public class ModBusServerTcp : ModBusServerIp
 {
 	private readonly object _lock = new();
-	private CancellationTokenSource _ctsrc = new();
+
+	private CancellationTokenSource? _cts;
+	private Task _task_listen = Task.CompletedTask;
 
 	private TcpListener? _listener;
 	private readonly List<TcpClientState> _clients = new();
@@ -21,7 +23,7 @@ public class ModBusServerTcp : ModBusServerIp
 	/// <inheritdoc/>
 	public override bool IsRunning { get; protected set; }
 	/// <inheritdoc/>
-	public override DateTime StartTime { get; protected set; }
+	public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromHours(1);
 
 	/// <summary>
 	/// 새 인스턴스를 만들어요
@@ -36,6 +38,8 @@ public class ModBusServerTcp : ModBusServerIp
 	/// <inheritdoc/>
 	protected override void Dispose(bool disposing)
 	{
+		if (disposing)
+			Stop();
 	}
 
 	/// <inheritdoc/>
@@ -44,9 +48,37 @@ public class ModBusServerTcp : ModBusServerIp
 		if (IsRunning)
 			return;
 
-		_listener = new TcpListener(Address, Port);
-		_listener.Start();
-		_listener.BeginAcceptTcpClient(new AsyncCallback(InternalAcceptTcpCallback), null);
+		IsRunning = true;
+		StartTime = DateTime.Now;
+
+		_cts = new CancellationTokenSource();
+		_task_listen = Task.Run(() =>
+		{
+			_listener = new TcpListener(Address, Port);
+			_listener.Start();
+			_listener.BeginAcceptTcpClient(new AsyncCallback(InternalAcceptTcpCallback), null);
+		}, _cts.Token);
+	}
+
+	/// <inheritdoc/>
+	public override void Stop()
+	{
+		if (!IsRunning)
+			return;
+
+		IsRunning = false;
+
+		_listener?.Stop();
+
+		_cts?.Cancel();
+		_task_listen.Wait();
+
+		lock (_lock)
+		{
+			foreach (var c in _clients)
+				c.Stream.Close();
+			_clients.Clear();
+		}
 	}
 
 	private void InternalAcceptTcpCallback(IAsyncResult res)
@@ -62,7 +94,7 @@ public class ModBusServerTcp : ModBusServerIp
 
 			var count = InternalCheckClient(state);
 			if (CanInvokeClientConnected)
-				OnClientConnected(new ModBusClientEventArgs(count, state.RemoveEndPoint));
+				OnClientConnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 			_ccount = count;
 
 			state.Stream.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
@@ -83,23 +115,33 @@ public class ModBusServerTcp : ModBusServerIp
 			throw new ArgumentNullException(nameof(res));
 		}
 
+		// 시간 리플레시, 안끊기게
 		state.Invalidate();
 
+		// 읽기 끝
 		int count;
 		try
 		{
 			count = state.Stream.EndRead(res);
 			if (count == 0)
-				throw new IOException();
+			{
+				// 끊음
+				InternalClientDisconnect(state);
+				return;
+			}
 		}
 		catch
 		{
 			// 끊겻을 것이다
+			InternalClientDisconnect(state);
 			return;
 		}
 
-		InternalHandleRequest(state);
+		// 버퍼를 처리함
+		var rsp = (Response)HandleRequest(state.Buffer);
+		state.Stream.Write(rsp.Buffer, 0, rsp.Buffer.Length);
 
+		// 다시 읽기 시작
 		try
 		{
 			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, new AsyncCallback(InternalReadCallback), state);
@@ -107,6 +149,7 @@ public class ModBusServerTcp : ModBusServerIp
 		catch
 		{
 			// 역시나 끊겼겠지
+			InternalClientDisconnect(state);
 		}
 	}
 
@@ -114,38 +157,52 @@ public class ModBusServerTcp : ModBusServerIp
 	{
 		lock (_lock)
 		{
-			bool b = false;
-			foreach (var _ in from c in _clients where state.Equals(c) select new { })
-				b = true;
+			if (IsRunning && !_clients.Contains(state))
+				_clients.Add(state);
 
 			var ticks = DateTime.Now.Ticks;
-			_clients.RemoveAll(c => (ticks - c.AliveTick) > 40000000); // 얼라이브 시간 조정할것
-
-			if (!b)
-				_clients.Add(state);
+			_clients.RemoveAll(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
 
 			return _clients.Count;
 		}
 	}
 
-	/// <inheritdoc/>
-	public override void Stop()
+	private void InternalClientDisconnect(TcpClientState state)
 	{
-		_ctsrc.Cancel();
+		if (state.AliveTick == 0)
+		{
+			// 이미 지웠거나, 작업에 진행 중이란 이야기 이므로 더 안함
+			return;
+		}
 
-		_listener?.Stop();
+		state.MarkDisconnected();
 
-		foreach (var c in _clients)
-			c.Stream.Close();
-		_clients.Clear();
+		lock (_lock)
+		{
+			var nth = _clients.IndexOf(state);
+			if (nth >= 0)
+			{
+				// 여기 있다는 것은 접속 때 메시지를 보냈다는 이야기
+				if (CanInvokeClientDisconnected)
+					OnClientDisconnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 
-		_ctsrc = new CancellationTokenSource();
-	}
+				_clients.RemoveAt(nth);
+			}
 
-	//
-	private void InternalHandleRequest(TcpClientState state)
-	{
-		var rsp = HandleRequest(state.Buffer);
-		state.Stream.Write(rsp.Buffer, 0, rsp.Buffer.Length);
+			// 겸사 겸사 다른 애들도 검사
+			var ticks = DateTime.Now.Ticks;
+			// 아래 두줄을 합치려면...?
+			var l = _clients.Where(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
+			if (l.Any())
+				_clients.RemoveAll(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
+
+			foreach (var c in l)
+			{
+				c.MarkDisconnected();
+
+				if (CanInvokeClientDisconnected)
+					OnClientDisconnected(new ModBusClientEventArgs(c.RemoteEndPoint));
+			}
+		}
 	}
 }
