@@ -124,29 +124,31 @@ public class ModBusServerTcp : ModBusServerIp
 		{
 			count = state.Stream.EndRead(res);
 			if (count == 0)
-			{
-				// 끊음
-				InternalClientDisconnect(state);
-				return;
-			}
+				throw new IOException();
 		}
-		catch
+		catch (IOException)
 		{
 			// 끊겻을 것이다
 			InternalClientDisconnect(state);
 			return;
 		}
+		catch (Exception)
+		{
+			// 이건 뭐 끊어야지
+			InternalClientDisconnect(state);
+			return;
+		}
 
 		// 버퍼를 처리함
-		var rsp = (Response)HandleRequest(state.Buffer);
-		state.Stream.Write(rsp.Buffer, 0, rsp.Buffer.Length);
+		var bs = HandleRequestBuffer(state.Buffer);
+		state.Stream.Write(bs, 0, bs.Length);
 
 		// 다시 읽기 시작
 		try
 		{
 			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, new AsyncCallback(InternalReadCallback), state);
 		}
-		catch
+		catch (Exception)
 		{
 			// 역시나 끊겼겠지
 			InternalClientDisconnect(state);

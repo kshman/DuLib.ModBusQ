@@ -127,15 +127,29 @@ public abstract class ModBusServer : IModBusServer
 	}
 
 	/// <summary>
-	/// 요청을 핸들링 한다
+	/// 요청을 처리하고 버퍼를 받는다
 	/// </summary>
-	/// <param name="Buffer"></param>
+	/// <param name="buffer"></param>
 	/// <returns></returns>
-	/// <exception cref="NotImplementedException"></exception>
-	protected object HandleRequest(byte[] Buffer)
+	protected byte[] HandleRequestBuffer(byte[] buffer)
 	{
-		var req = new Request(Buffer);
+		var rsp = InternalHandleRequest(new Request(buffer));
+		return rsp.Buffer;
+	}
 
+	/// <summary>
+	/// 요청을 처리하고 요청처리 오브젝트를 받는다
+	/// </summary>
+	/// <param name="buffer"></param>
+	/// <returns></returns>
+	protected object HandleRequest(byte[] buffer)
+	{
+		return InternalHandleRequest(new Request(buffer));
+	}
+
+		//
+	private Response InternalHandleRequest(Request req)
+	{
 		if (!IsFunctionEnable((ModBusFunction)req.Function))
 			return new Response(req, ModBusErrorCode.IllegalFunction);
 
@@ -349,7 +363,7 @@ public abstract class ModBusServer : IModBusServer
 		return rsp;
 	}
 
-	public void WriteCoils(int address, params bool[] values)
+	public void SetCoils(int address, params bool[] values)
 	{
 		if (values.Length == 0)
 			return;
@@ -366,7 +380,7 @@ public abstract class ModBusServer : IModBusServer
 		}
 	}
 
-	public void WriteHoldingRegisters(int address, params int[] values)
+	public void SetHoldingRegisters(int address, params int[] values)
 	{
 		if (values.Length == 0)
 			return;
