@@ -24,5 +24,5 @@ public interface IModBusServer : IDisposable
 	bool IsFunctionEnable(ModBusFunction function);
 
 	void WriteCoils(int address, params bool[] values);
-	void WriteHoldingRegisters(int address, params short[] values);
+	void WriteHoldingRegisters(int address, params int[] values);
 }
