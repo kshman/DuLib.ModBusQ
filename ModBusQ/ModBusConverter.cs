@@ -193,6 +193,28 @@ public static class ModBusConverter
 	/// <summary>
 	/// 
 	/// </summary>
+	/// <param name="registers"></param>
+	/// <param name="offset"></param>
+	/// <param name="inverse"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentException"></exception>
+	public static int ToModBusRawInt(this int[] registers, int offset = 0)
+		=> ToModBusInt(registers, offset);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="registers"></param>
+	/// <param name="offset"></param>
+	/// <param name="inverse"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentException"></exception>
+	public static long ToModBusRawLong(this int[] registers, int offset = 0)
+		=> ToModBusLong(registers, offset);
+
+	/// <summary>
+	/// 
+	/// </summary>
 	/// <param name="value"></param>
 	/// <param name="inverse"></param>
 	/// <returns></returns>
