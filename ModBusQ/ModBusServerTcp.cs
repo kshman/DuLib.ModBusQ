@@ -47,7 +47,7 @@ public class ModBusServerTcp : ModBusServerIp
 			return;
 
 		_lg?.MethodEnter("ModBusServerTcp.Start");
-		
+
 		IsRunning = true;
 		StartTime = DateTime.Now;
 
@@ -83,31 +83,47 @@ public class ModBusServerTcp : ModBusServerIp
 				c.Stream.Close();
 			_clients.Clear();
 		}
-		
+
 		_lg?.MethodLeave("ModBusServerTcp.Stop");
 	}
 
 	private void InternalAcceptTcpCallback(IAsyncResult res)
 	{
+		TcpClientState? state = null;
+
 		try
 		{
 			var tcp = _listener!.EndAcceptTcpClient(res);
 			_listener.BeginAcceptTcpClient(InternalAcceptTcpCallback, null);
 			tcp.ReceiveTimeout = (int)ReceiveTimeout.TotalMilliseconds;
 
-			var state = new TcpClientState(tcp);
+			state = new TcpClientState(tcp);
 
 			InternalCheckClient(state);
-			OnClientConnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 
 			state.Stream.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
 			state.Stream.BeginRead(state.Buffer, 0, state.Buffer.Length, InternalReadCallback, state);
+		}
+		catch (ObjectDisposedException)
+		{
+			//
+		}
+		catch (SocketException)
+		{
+			//
+		}
+		catch (IOException)
+		{
+			//
 		}
 		catch (Exception ex)
 		{
 			// 훔
 			System.Diagnostics.Debug.WriteLine(ex);
 		}
+
+		if (state != null)
+			OnClientConnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 	}
 
 	private void InternalReadCallback(IAsyncResult res)

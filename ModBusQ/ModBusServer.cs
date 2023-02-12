@@ -450,4 +450,40 @@ public abstract class ModBusServer : IModBusServer
 
 		device.SetHoldingRegisters(address, values);
 	}
+
+	public bool GetCoil(int devId, int address)
+	{
+		if (address<0 || address>65535)
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
+		if (!_devices.TryGetValue(devId, out var device))
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
+		return device.GetCoil(address);
+	}
+
+	public bool GetDiscreteInput(int devId, int address)
+	{
+		if (address < 0 || address > 65535)
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
+		if (!_devices.TryGetValue(devId, out var device))
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
+		return device.GetDiscreteInput(address);
+	}
+
+	public int GetHoldingRegister(int devId, int address)
+	{
+		if (address < 0 || address > 65535)
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
+		if (!_devices.TryGetValue(devId, out var device))
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
+		return device.GetHoldingRegister(address);
+	}
+
+	public int GetInputRegister(int devId, int address)
+	{
+		if (address < 0 || address > 65535)
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
+		if (!_devices.TryGetValue(devId, out var device))
+			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
+		return device.GetInputRegister(address);
+	}
 }

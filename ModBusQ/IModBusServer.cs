@@ -28,4 +28,9 @@ public interface IModBusServer : IDisposable
 
 	void SetCoils(int devId, int address, params bool[] values);
 	void SetHoldingRegisters(int devId, int address, params int[] values);
+
+	bool GetCoil(int devId, int address);
+	bool GetDiscreteInput(int devId, int address);
+	int GetHoldingRegister(int devId, int address);
+	int GetInputRegister(int devId, int address);
 }
