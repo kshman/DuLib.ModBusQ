@@ -5,21 +5,23 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Du</RootNamespace>
-    <RepositoryUrl>https://github.com/kshman/DuLib</RepositoryUrl>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>0.1.2</Version>
 
+    <RepositoryUrl>https://github.com/kshman/DuLib.ModBusQ</RepositoryUrl>
+    <Version>0.1.2</Version>
     <Title>DuLib.ModBusQ</Title>
     <PackageId>DuLib.ModBusQ</PackageId>
     <Product>DuLib.ModBusQ</Product>
     <Description>Simple ModBus class library</Description>
     <Authors>kshman</Authors>
-    <PackageProjectUrl>https://github.com/kshman/DuLib</PackageProjectUrl>
-    <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>BSD-2-Clause</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

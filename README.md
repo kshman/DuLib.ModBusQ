@@ -1,4 +1,2 @@
-﻿qMod like simple ModBus class library
-
-Repository: https://github.com/kshman/DuLib
+﻿qMod와 비슷한 모드버스 클래스 라이브러리
 
