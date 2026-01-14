@@ -4,8 +4,8 @@ namespace Du.ModBusQ.Suppliment;
 
 internal static class ThrowIf
 {
-	private static readonly ModBusErrorCode[] s_modbus_errors = new[]
-	{
+	private static readonly ModBusErrorCode[] s_modbus_errors =
+	[
 		// 0=에러 없음
 		ModBusErrorCode.IllegalFunction,
 		ModBusErrorCode.IllegalDataAddress,
@@ -17,7 +17,7 @@ internal static class ThrowIf
 		//ModBusErrorCode.MemoryParityError,
 		//ModBusErrorCode.GatewayPath,
 		//ModBusErrorCode.GatewayTargetDevice,
-	};
+	];
 
 	internal static void ReadError(IReadOnlyList<byte> bs, ModBusFunction function)
 	{

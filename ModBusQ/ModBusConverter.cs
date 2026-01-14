@@ -12,39 +12,39 @@ public static class ModBusConverter
 
 		if (length == 2)
 		{
-			return inverse ? new[]
-			{
+			return inverse ?
+			[
 				rs[offset + 1],
 				rs[offset],
-			} : new[]
-			{
+			] :
+			[
 				rs[offset],
 				rs[offset + 1],
-			};
+			];
 		}
 		else if (length == 4)
 		{
-			return inverse ? new[]
-			{
+			return inverse ?
+			[
 				rs[offset + 3],
 				rs[offset + 2],
 				rs[offset + 1],
 				rs[offset],
-			} : new[]
-			{
+			] :
+			[
 				rs[offset],
 				rs[offset + 1],
 				rs[offset + 2],
 				rs[offset + 3],
-			};
+			];
 		}
 		else if (offset == 0)
-			return inverse ? rs.Reverse().ToArray() : rs;
+			return inverse ? [.. rs.Reverse()] : rs;
 		else
 		{
 			int[] ns = new int[length];
 			Array.Copy(rs, offset, ns, 0, length);
-			return inverse ? ns.Reverse().ToArray() : ns;
+			return inverse ? [.. ns.Reverse()] : ns;
 		}
 	}
 
@@ -65,11 +65,11 @@ public static class ModBusConverter
 		var bs1 = BitConverter.GetBytes(rs[1]);
 		var bs2 = BitConverter.GetBytes(rs[0]);
 
-		return BitConverter.ToInt32(new[]
-		{
+		return BitConverter.ToInt32(
+		[
 			bs2[0], bs2[1],
 			bs1[0], bs1[1]
-		}, 0);
+		], 0);
 	}
 
 	/// <summary>
@@ -91,13 +91,13 @@ public static class ModBusConverter
 		var bs3 = BitConverter.GetBytes(rs[1]);
 		var bs4 = BitConverter.GetBytes(rs[0]);
 
-		return BitConverter.ToInt64(new[]
-		{
+		return BitConverter.ToInt64(
+		[
 			bs4[0], bs4[1],
 			bs3[0], bs3[1],
 			bs2[0], bs2[1],
 			bs1[0], bs1[1]
-		}, 0);
+		], 0);
 	}
 
 	/// <summary>
@@ -117,11 +117,11 @@ public static class ModBusConverter
 		var bs1 = BitConverter.GetBytes(rs[1]);
 		var bs2 = BitConverter.GetBytes(rs[0]);
 
-		return BitConverter.ToSingle(new[]
-		{
+		return BitConverter.ToSingle(
+		[
 			bs2[0], bs2[1],
 			bs1[0], bs1[1]
-		}, 0);
+		], 0);
 	}
 
 	/// <summary>
@@ -143,16 +143,16 @@ public static class ModBusConverter
 		var bs3 = BitConverter.GetBytes(rs[1]);
 		var bs4 = BitConverter.GetBytes(rs[0]);
 
-		return BitConverter.ToDouble(new[]
-		{
+		return BitConverter.ToDouble(
+		[
 			bs4[0], bs4[1],
 			bs3[0], bs3[1],
 			bs2[0], bs2[1],
 			bs1[0], bs1[1]
-		}, 0);
+		], 0);
 	}
 
-	private static readonly char[] s_trim_chars = { ' ', '\t', '\0', '\r', '\n' };
+	private static readonly char[] s_trim_chars = [' ', '\t', '\0', '\r', '\n'];
 
 	/// <summary>
 	/// 
@@ -223,8 +223,8 @@ public static class ModBusConverter
 		var bs = BitConverter.GetBytes(value);
 		var rs = new[]
 		{
-			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0)
+			BitConverter.ToInt32([bs[0], bs[1], 0, 0,], 0),
+			BitConverter.ToInt32([bs[2], bs[3], 0, 0,], 0)
 		};
 
 		return TestInverse(inverse, rs, 0, 2);
@@ -241,10 +241,10 @@ public static class ModBusConverter
 		var bs = BitConverter.GetBytes(value);
 		var rs = new[]
 		{
-			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[4], bs[5], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[6], bs[7], 0, 0, }, 0),
+			BitConverter.ToInt32([bs[0], bs[1], 0, 0,], 0),
+			BitConverter.ToInt32([bs[2], bs[3], 0, 0,], 0),
+			BitConverter.ToInt32([bs[4], bs[5], 0, 0,], 0),
+			BitConverter.ToInt32([bs[6], bs[7], 0, 0,], 0),
 		};
 
 		return TestInverse(inverse, rs, 0, 4);
@@ -261,8 +261,8 @@ public static class ModBusConverter
 		var bs = BitConverter.GetBytes(value);
 		var rs = new[]
 		{
-			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0)
+			BitConverter.ToInt32([bs[0], bs[1], 0, 0,], 0),
+			BitConverter.ToInt32([bs[2], bs[3], 0, 0,], 0)
 		};
 		return TestInverse(inverse, rs, 0, 2);
 	}
@@ -278,10 +278,10 @@ public static class ModBusConverter
 		var bs = BitConverter.GetBytes(value);
 		var rs = new[]
 		{
-			BitConverter.ToInt32(new byte[] { bs[0], bs[1], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[2], bs[3], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[4], bs[5], 0, 0, }, 0),
-			BitConverter.ToInt32(new byte[] { bs[6], bs[7], 0, 0, }, 0),
+			BitConverter.ToInt32([bs[0], bs[1], 0, 0,], 0),
+			BitConverter.ToInt32([bs[2], bs[3], 0, 0,], 0),
+			BitConverter.ToInt32([bs[4], bs[5], 0, 0,], 0),
+			BitConverter.ToInt32([bs[6], bs[7], 0, 0,], 0),
 		};
 
 		return TestInverse(inverse, rs, 0, 4);

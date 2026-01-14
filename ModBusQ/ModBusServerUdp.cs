@@ -5,7 +5,12 @@ using System.Net.Sockets;
 
 namespace Du.ModBusQ;
 
-public class ModBusServerUdp : ModBusServerIp
+/// <summary>
+/// 새 인스턴스를 만들어요
+/// </summary>
+/// <param name="port"></param>
+/// <param name="logger"></param>
+public class ModBusServerUdp(int port = 502, ILogger? logger = null) : ModBusServerIp(port, logger)
 {
 	private UdpClient? _udp;
 	private bool _rehash;
@@ -23,16 +28,6 @@ public class ModBusServerUdp : ModBusServerIp
 			base.Port = value;
 			_rehash = true;
 		}
-	}
-
-	/// <summary>
-	/// 새 인스턴스를 만들어요
-	/// </summary>
-	/// <param name="port"></param>
-	/// <param name="logger"></param>
-	public ModBusServerUdp(int port = 502, ILogger? logger = null)
-		: base(port, logger)
-	{
 	}
 
 	/// <inheritdoc/>

@@ -1,24 +1,19 @@
 ﻿namespace Du.ModBusQ.Suppliment;
 
 // 모드버스 디바이스 구현
-internal class Device
+internal class Device(int id)
 {
 	private readonly ReaderWriterLockSlim _lock_coils = new();
 	private readonly ReaderWriterLockSlim _lock_discrete_inputs = new();
 	private readonly ReaderWriterLockSlim _lock_input_registers = new();
 	private readonly ReaderWriterLockSlim _lock_holding_registers = new();
 
-	private readonly HashSet<int> _coils = new();
-	private readonly HashSet<int> _discrete_inputs = new();
-	private readonly Dictionary<int, ushort> _input_registers = new();
-	private readonly Dictionary<int, ushort> _holding_registers = new();
+	private readonly HashSet<int> _coils = [];
+	private readonly HashSet<int> _discrete_inputs = [];
+	private readonly Dictionary<int, ushort> _input_registers = [];
+	private readonly Dictionary<int, ushort> _holding_registers = [];
 
-	public byte Id { get; }
-
-	public Device(int id)
-	{
-		Id = (byte)id;
-	}
+	public byte Id { get; } = (byte)id;
 
 	public bool GetCoil(int address)
 	{

@@ -54,16 +54,10 @@ internal static class DmTcp
 	}
 }
 
-internal class UdpClientState
+internal class UdpClientState(IPEndPoint endPoint, byte[] data)
 {
-	public IPEndPoint EndPoint { get; set; }
-	public byte[] Buffer { get; set; }
-
-	public UdpClientState(IPEndPoint endPoint, byte[] data)
-	{
-		EndPoint = endPoint;
-		Buffer = data;
-	}
+	public IPEndPoint EndPoint { get; set; } = endPoint;
+	public byte[] Buffer { get; set; } = data;
 }
 
 internal class TcpClientState
@@ -131,17 +125,17 @@ internal class Request : Transfer
 			case ModBusFunction.ReadDiscreteInputs:
 			case ModBusFunction.ReadHoldingRegisters:
 			case ModBusFunction.ReadInputRegisters:
-				Data = Array.Empty<ushort>();
+				Data = [];
 				break;
 			
 			case ModBusFunction.WriteSingleCoil:
 			case ModBusFunction.WriteSingleRegister:
-				Data = new[] { Quantity };
+				Data = [Quantity];
 				break;
 			
 			case ModBusFunction.WriteMultipleCoils:
 				Count = arr[12];
-				Data = new ushort[Count % 2 == 0 ? Count / 2 : Count / 2 + 1];
+				Data = new ushort[Count % 2 == 0 ? Count / 2 : (Count / 2) + 1];
 				Buffer.BlockCopy(arr, 13, Data, 0, Count);
 				break;
 			
@@ -154,12 +148,12 @@ internal class Request : Transfer
 
 			case ModBusFunction.EncapsulatedInterface:
 			default:
-				Data = Array.Empty<ushort>();
+				Data = [];
 				break;
 		}
 	}
 
-	private static ushort GetUshort(IReadOnlyList<byte> bytes, int offset)
+	private static ushort GetUshort(byte[] bytes, int offset)
 	{
 		var bs = new[] { bytes[offset + 1], bytes[offset] };
 		return BitConverter.ToUInt16(bs);

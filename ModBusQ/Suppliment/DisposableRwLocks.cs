@@ -1,7 +1,6 @@
 ﻿using Du.Properties;
 
 namespace Du.ModBusQ.Suppliment;
-#pragma warning disable S3881 // "IDisposable" should be implemented correctly
 
 internal static class LockerOfReaderWriter
 {
@@ -48,7 +47,7 @@ internal static class LockerOfReaderWriter
 	}
 }
 
-internal class DisposableRwLocks : IDisposable
+internal class DisposableRwLocks(ReaderWriterLockSlim l, DisposableRwLocks.Mode m) : IDisposable
 {
 	internal enum Mode
 	{
@@ -58,14 +57,8 @@ internal class DisposableRwLocks : IDisposable
 		Write,
 	}
 
-	private readonly ReaderWriterLockSlim _l;
-	private Mode _m;
-
-	public DisposableRwLocks(ReaderWriterLockSlim l, Mode m)
-	{
-		_l = l;
-		_m = m;
-	}
+	private readonly ReaderWriterLockSlim _l = l;
+	private Mode _m = m;
 
 	public void Dispose()
 	{
@@ -96,6 +89,3 @@ internal class DisposableRwLocks : IDisposable
 		}
 	}
 }
-
-#pragma warning restore S3881 // "IDisposable" should be implemented correctly
-

@@ -309,7 +309,7 @@ public abstract class ModBusServer : IModBusServer
 		{
 			var value = req.Data[0];
 
-			if (value > 0 && value != 65280)
+			if (value is > 0 and not 65280)
 				return new Response(req, ModBusErrorCode.IllegalDataValue);
 
 			var rsp = new Response(req, 3, 128);
@@ -453,7 +453,7 @@ public abstract class ModBusServer : IModBusServer
 
 	public bool GetCoil(int devId, int address)
 	{
-		if (address<0 || address>65535)
+		if (address is < 0 or > 65535)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
 		if (!_devices.TryGetValue(devId, out var device))
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
@@ -462,7 +462,7 @@ public abstract class ModBusServer : IModBusServer
 
 	public bool GetDiscreteInput(int devId, int address)
 	{
-		if (address < 0 || address > 65535)
+		if (address is < 0 or > 65535)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
 		if (!_devices.TryGetValue(devId, out var device))
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
@@ -471,7 +471,7 @@ public abstract class ModBusServer : IModBusServer
 
 	public int GetHoldingRegister(int devId, int address)
 	{
-		if (address < 0 || address > 65535)
+		if (address is < 0 or > 65535)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
 		if (!_devices.TryGetValue(devId, out var device))
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));
@@ -480,7 +480,7 @@ public abstract class ModBusServer : IModBusServer
 
 	public int GetInputRegister(int devId, int address)
 	{
-		if (address < 0 || address > 65535)
+		if (address is < 0 or > 65535)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
 		if (!_devices.TryGetValue(devId, out var device))
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(devId));

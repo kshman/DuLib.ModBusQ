@@ -7,31 +7,26 @@ namespace Du.ModBusQ;
 /// <summary>
 /// TCP 서버
 /// </summary>
-public class ModBusServerTcp : ModBusServerIp
+/// <remarks>
+/// 새 인스턴스를 만들어요
+/// </remarks>
+/// <param name="port"></param>
+/// <param name="logger"></param>
+public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusServerIp(port, logger)
 {
-	private readonly object _lock = new();
+	private readonly Lock _lock = new();
 
 	private CancellationTokenSource? _cts;
 	private Task _task_listen = Task.CompletedTask;
 
 	private TcpListener? _listener;
-	private readonly List<TcpClientState> _clients = new();
+	private readonly List<TcpClientState> _clients = [];
 
 	/// <inheritdoc/>
 	public override ModBusConnection ConnectionType => ModBusConnection.Tcp;
 
 	/// <summary>연결 유지 시간</summary>
 	public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromHours(1);
-
-	/// <summary>
-	/// 새 인스턴스를 만들어요
-	/// </summary>
-	/// <param name="port"></param>
-	/// <param name="logger"></param>
-	public ModBusServerTcp(int port = 502, ILogger? logger = null)
-		: base(port, logger)
-	{
-	}
 
 	/// <inheritdoc/>
 	protected override void Dispose(bool disposing)
