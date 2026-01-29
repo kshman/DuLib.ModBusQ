@@ -17,6 +17,9 @@ public interface IModBusServer : IDisposable
 	/// <summary>읽기 시간 제한</summary>
 	TimeSpan ReceiveTimeout { get; set; }
 
+	/// <summary>추가된 추적 플래그</summary>
+	ModBusTraceFlags TraceFlags { get; set; }
+
 	void Start();
 	void Stop();
 

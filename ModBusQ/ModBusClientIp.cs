@@ -18,9 +18,11 @@ public abstract class ModBusClientIp : IModBusClient
 	public abstract bool IsConnected { get; protected set; }
 
 	/// <inheritdoc/>
-	public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+	public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
 	/// <inheritdoc/>
-	public TimeSpan ReceiveTimeout { get; set; } = Timeout.InfiniteTimeSpan;
+	public TimeSpan ReceiveTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+	public ModBusTraceFlags TraceFlags { get; set; } = ModBusTraceFlags.None;
 
 	/// <summary>데이터를 받았을 때 처리 핸들러</summary>
 	public event EventHandler<ModBusBufferedEventArgs>? AfterRead;

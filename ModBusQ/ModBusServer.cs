@@ -26,10 +26,13 @@ public abstract class ModBusServer : IModBusServer
 	public DateTime StartTime { get; protected set; }
 
 	/// <inheritdoc/>
-	public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(5);
+	public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
 
 	/// <inheritdoc/>
-	public TimeSpan ReceiveTimeout { get; set; } = Timeout.InfiniteTimeSpan;
+	public TimeSpan ReceiveTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+	/// <inheritdoc/>
+	public ModBusTraceFlags TraceFlags { get; set; } = ModBusTraceFlags.None;
 
 	/// <summary></summary>
 	public event EventHandler<ModBusAddressEventArgs>? CoilsChanged;

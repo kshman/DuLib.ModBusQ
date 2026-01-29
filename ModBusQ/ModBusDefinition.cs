@@ -143,3 +143,22 @@ public enum ModBusErrorCode : byte
 	[Description("알 수 없어요")]
 	Unknown = 255,
 }
+
+/// <summary>
+/// Specifies trace flag options for ModBus communication, indicating which types of data operations are included in
+/// tracing.
+/// </summary>
+/// <remarks>Use this enumeration to control the level of detail captured during ModBus data tracing. Flags can be
+/// combined to enable tracing for read operations, write operations, or both. This enumeration supports bitwise
+/// combination of its member values.</remarks>
+public enum ModBusTraceFlags
+{
+	/// <summary>없음</summary>
+	None = 0,
+	/// <summary>읽기 데이터</summary>
+	Read = 1,
+	/// <summary>쓰기 데이터</summary>
+	Write = 2,
+	/// <summary>모든 데이터</summary>
+	AllData = Read | Write,
+}
