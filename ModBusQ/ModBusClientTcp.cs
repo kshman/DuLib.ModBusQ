@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Buffers.Binary;
+using System.Net;
 using System.Net.Sockets;
 using Du.ModBusQ.Suppliment;
 using Du.Properties;
@@ -262,13 +263,9 @@ public class ModBusClientTcp : ModBusClientIp
 			bs = InternalTransfer(bs, ModBusFunction.ReadHoldingRegisters);
 
 			var ret = new short[readCount];
-			var tb = new byte[2];
+			var span = bs.AsSpan(9);
 			for (var i = 0; i < readCount; i++)
-			{
-				tb[0] = bs[checked(9 + i * 2 + 1)];
-				tb[1] = bs[checked(9 + i * 2)];
-				ret[i] = BitConverter.ToInt16(tb, 0);
-			}
+				BinaryPrimitives.TryReadInt16BigEndian(span.Slice(i * 2, 2), out ret[i]);
 
 			return ret;
 		}
@@ -296,13 +293,9 @@ public class ModBusClientTcp : ModBusClientIp
 			bs = InternalTransfer(bs, ModBusFunction.ReadInputRegisters);
 
 			var ret = new short[readCount];
-			var tb = new byte[2];
+			var span = bs.AsSpan(9);
 			for (var i = 0; i < readCount; i++)
-			{
-				tb[0] = bs[checked(9 + i * 2 + 1)];
-				tb[1] = bs[checked(9 + i * 2)];
-				ret[i] = BitConverter.ToInt16(tb, 0);
-			}
+				BinaryPrimitives.TryReadInt16BigEndian(span.Slice(i * 2, 2), out ret[i]);
 
 			return ret;
 		}
@@ -330,8 +323,7 @@ public class ModBusClientTcp : ModBusClientIp
 			bs = InternalTransfer(bs, ModBusFunction.ReadHoldingRegisters);
 
 			var ret = new byte[readCount];
-			for (var i =0 ; i < readCount; i++)
-				ret[i] = bs[checked(9 + i)];
+			Array.Copy(bs, 9, ret, 0, readCount);
 
 			return ret;
 		}
@@ -359,8 +351,7 @@ public class ModBusClientTcp : ModBusClientIp
 			bs = InternalTransfer(bs, ModBusFunction.ReadInputRegisters);
 
 			var ret = new byte[readCount];
-			for (var i = 0; i < readCount; i++)
-				ret[i] = bs[checked(9 + i)];
+			Array.Copy(bs, 9, ret, 0, readCount);
 
 			return ret;
 		}
