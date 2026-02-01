@@ -344,7 +344,7 @@ public abstract class ModBusServer : IModBusServer
 
 			if (rsp.Error == ModBusErrorCode.NoError)
 			{
-				dev.SetHoldingRegister(req.Address, req.Data[0]);
+				dev.SetHoldingRegister(req.Address, (short)req.Data[0]);
 
 				rsp.AddWriteResponse(req.Data[0]);
 
@@ -402,7 +402,7 @@ public abstract class ModBusServer : IModBusServer
 				for (var i = 0; i < req.Quantity; i++)
 				{
 					var value = req.Data[i];
-					dev.SetHoldingRegister(req.Address + i, value);
+					dev.SetHoldingRegister(req.Address + i, (short)value);
 				}
 
 				rsp.AddWriteResponse(req.Quantity);
@@ -441,7 +441,7 @@ public abstract class ModBusServer : IModBusServer
 		device.SetCoils(address, values);
 	}
 
-	public void SetHoldingRegisters(int devId, int address, params int[] values)
+	public void SetHoldingRegisters(int devId, int address, params short[] values)
 	{
 		if (values.Length == 0)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(values));
@@ -472,7 +472,7 @@ public abstract class ModBusServer : IModBusServer
 		return device.GetDiscreteInput(address);
 	}
 
-	public int GetHoldingRegister(int devId, int address)
+	public short GetHoldingRegister(int devId, int address)
 	{
 		if (address is < 0 or > 65535)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));
@@ -481,7 +481,7 @@ public abstract class ModBusServer : IModBusServer
 		return device.GetHoldingRegister(address);
 	}
 
-	public int GetInputRegister(int devId, int address)
+	public short GetInputRegister(int devId, int address)
 	{
 		if (address is < 0 or > 65535)
 			throw new ArgumentException(Resources.ExceptionArgument, nameof(address));

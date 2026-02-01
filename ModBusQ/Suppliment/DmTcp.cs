@@ -233,6 +233,14 @@ internal class Response : Transfer
 		}
 	}
 
+	public void AddWriteResponse(short value)
+	{
+		// 8,9 주소
+		SetUshort(8, Address);
+		// 10,11 값
+		SetShort(10, value);
+	}
+
 	public void AddWriteResponse(ushort value)
 	{
 		// 8,9 주소
@@ -242,6 +250,13 @@ internal class Response : Transfer
 	}
 
 	private void SetUshort(int offset, ushort value)
+	{
+		var bs = BitConverter.GetBytes(value);
+		Buffer[offset + 0] = bs[1];
+		Buffer[offset + 1] = bs[0];
+	}
+
+	private void SetShort(int offset, short value)
 	{
 		var bs = BitConverter.GetBytes(value);
 		Buffer[offset + 0] = bs[1];

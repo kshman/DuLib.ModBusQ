@@ -88,18 +88,22 @@ public abstract class ModBusClientIp : IModBusClient
 	/// <inheritdoc/>
 	public abstract bool[] ReadDiscreteInputs(int devId, int startAddress, int readCount);
 	/// <inheritdoc/>
-	public abstract int[] ReadHoldingRegisters(int devId, int startAddress, int readCount);
+	public abstract short[] ReadHoldingRegisters(int devId, int startAddress, int readCount);
 	/// <inheritdoc/>
-	public abstract int[] ReadInputRegisters(int devId, int startAddress, int readCount);
+	public abstract short[] ReadInputRegisters(int devId, int startAddress, int readCount);
+	/// <inheritdoc/>
+	public abstract byte[] ReadRawHoldingRegisters(int devId, int startAddress, int readCount);
+	/// <inheritdoc/>
+	public abstract byte[] ReadRawInputRegisters(int devId, int startAddress, int readCount);
 
 	/// <inheritdoc/>
 	public abstract void WriteSingleCoil(int devId, int startAddress, bool value);
 	/// <inheritdoc/>
-	public abstract void WriteSingleRegister(int devId, int startAddress, int value);
+	public abstract void WriteSingleRegister(int devId, int startAddress, short value);
 	/// <inheritdoc/>
 	public abstract void WriteMultipleCoils(int devId, int startAddress, bool[] values);
 	/// <inheritdoc/>
-	public abstract void WriteMultipleRegisters(int devId, int startAddress, int[] values);
+	public abstract void WriteMultipleRegisters(int devId, int startAddress, short[] values);
 
 	/// <summary>
 	/// 읽고난 뒤 대리자 호출

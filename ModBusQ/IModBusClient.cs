@@ -46,8 +46,24 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
+	/// <returns>16비트 정수를 int로 저장한 배열</returns>
+	public short[] ReadHoldingRegisters(int devId, int startAddress, int readCount);
+	/// <summary>
+	/// 인풋 레지스터를 읽어요
+	/// </summary>
+	/// <param name="devId">읽어올 장치 아이디</param>
+	/// <param name="startAddress">읽기 시작할 주소</param>
+	/// <param name="readCount">읽을 주소의 개수</param>
+	/// <returns>16비트 정수를 int로 저장한 배열</returns>
+	public short[] ReadInputRegisters(int devId, int startAddress, int readCount);
+	/// <summary>
+	/// 홀딩 레지스터를 읽어요
+	/// </summary>
+	/// <param name="devId">읽어올 장치 아이디</param>
+	/// <param name="startAddress">읽기 시작할 주소</param>
+	/// <param name="readCount">읽을 주소의 개수</param>
 	/// <returns></returns>
-	public int[] ReadHoldingRegisters(int devId, int startAddress, int readCount);
+	public byte[] ReadRawHoldingRegisters(int devId, int startAddress, int readCount);
 	/// <summary>
 	/// 인풋 레지스터를 읽어요
 	/// </summary>
@@ -55,7 +71,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
 	/// <returns></returns>
-	public int[] ReadInputRegisters(int devId, int startAddress, int readCount);
+	public byte[] ReadRawInputRegisters(int devId, int startAddress, int readCount);
 
 	/// <summary>
 	/// 코일 한개를 써요
@@ -70,7 +86,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">쓸 장치 아이디</param>
 	/// <param name="startAddress">쓸 위치의 주소</param>
 	/// <param name="value">쓸 값</param>
-	public void WriteSingleRegister(int devId, int startAddress, int value);
+	public void WriteSingleRegister(int devId, int startAddress, short value);
 	/// <summary>
 	/// 연속된 코일 여러개를 써요
 	/// </summary>
@@ -84,5 +100,5 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">쓸 장치 아이디</param>
 	/// <param name="startAddress">쓰기 시작할 위치의 주소</param>
 	/// <param name="values">쓸 값</param>
-	public void WriteMultipleRegisters(int devId, int startAddress, int[] values);
+	public void WriteMultipleRegisters(int devId, int startAddress, short[] values);
 }

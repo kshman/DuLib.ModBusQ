@@ -245,7 +245,7 @@ public class ModBusClientTcp : ModBusClientIp
 	}
 
 	/// <inheritdoc/>
-	public override int[] ReadHoldingRegisters(int devId, int startAddress, int readCount)
+	public override short[] ReadHoldingRegisters(int devId, int startAddress, int readCount)
 	{
 		_lg?.MethodEnter("ModBusClientTcp.ReadHoldingRegisters");
 		try
@@ -261,7 +261,7 @@ public class ModBusClientTcp : ModBusClientIp
 				startAddress, readCount, ModBusFunction.ReadHoldingRegisters, 6);
 			bs = InternalTransfer(bs, ModBusFunction.ReadHoldingRegisters);
 
-			var ret = new int[readCount];
+			var ret = new short[readCount];
 			var tb = new byte[2];
 			for (var i = 0; i < readCount; i++)
 			{
@@ -279,7 +279,7 @@ public class ModBusClientTcp : ModBusClientIp
 	}
 
 	/// <inheritdoc/>
-	public override int[] ReadInputRegisters(int devId, int startAddress, int readCount)
+	public override short[] ReadInputRegisters(int devId, int startAddress, int readCount)
 	{
 		_lg?.MethodEnter("ModBusClientTcp.ReadInputRegisters");
 		try
@@ -295,7 +295,7 @@ public class ModBusClientTcp : ModBusClientIp
 				startAddress, readCount, ModBusFunction.ReadInputRegisters, 6);
 			bs = InternalTransfer(bs, ModBusFunction.ReadInputRegisters);
 
-			var ret = new int[readCount];
+			var ret = new short[readCount];
 			var tb = new byte[2];
 			for (var i = 0; i < readCount; i++)
 			{
@@ -309,6 +309,64 @@ public class ModBusClientTcp : ModBusClientIp
 		finally
 		{
 			_lg?.MethodLeave("ModBusClientTcp.ReadInputRegisters");
+		}
+	}
+
+	/// <inheritdoc/>
+	public override byte[] ReadRawHoldingRegisters(int devId, int startAddress, int readCount)
+	{
+		_lg?.MethodEnter("ModBusClientTcp.ReadRawHoldingRegisters");
+		try
+		{
+			if (startAddress < 0 || (startAddress + readCount) > 65535)
+				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
+			if (readCount is < 0 or > 125)
+				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
+			if (_conn == null || !_conn.Client.Connected || _ntst == null)
+				throw new ModBusConnectionException(Resources.GetConnectionFirst);
+
+			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
+				startAddress, readCount, ModBusFunction.ReadHoldingRegisters, 6);
+			bs = InternalTransfer(bs, ModBusFunction.ReadHoldingRegisters);
+
+			var ret = new byte[readCount];
+			for (var i =0 ; i < readCount; i++)
+				ret[i] = bs[checked(9 + i)];
+
+			return ret;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusClientTcp.ReadRawHoldingRegisters");
+		}
+	}
+
+	/// <inheritdoc/>
+	public override byte[] ReadRawInputRegisters(int devId, int startAddress, int readCount)
+	{
+		_lg?.MethodEnter("ModBusClientTcp.ReadRawInputRegisters");
+		try
+		{
+			if (startAddress < 0 || (startAddress + readCount) > 65535)
+				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
+			if (readCount is < 0 or > 125)
+				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
+			if (_conn == null || !_conn.Client.Connected || _ntst == null)
+				throw new ModBusConnectionException(Resources.GetConnectionFirst);
+
+			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
+				startAddress, readCount, ModBusFunction.ReadInputRegisters, 6);
+			bs = InternalTransfer(bs, ModBusFunction.ReadInputRegisters);
+
+			var ret = new byte[readCount];
+			for (var i = 0; i < readCount; i++)
+				ret[i] = bs[checked(9 + i)];
+
+			return ret;
+		}
+		finally
+		{
+			_lg?.MethodLeave("ModBusClientTcp.ReadRawInputRegisters");
 		}
 	}
 
@@ -336,7 +394,7 @@ public class ModBusClientTcp : ModBusClientIp
 	}
 
 	/// <inheritdoc/>
-	public override void WriteSingleRegister(int devId, int startAddress, int value)
+	public override void WriteSingleRegister(int devId, int startAddress, short value)
 	{
 		_lg?.MethodEnter("ModBusClientTcp.WriteSingleRegister");
 		try
@@ -395,7 +453,7 @@ public class ModBusClientTcp : ModBusClientIp
 	}
 
 	/// <inheritdoc/>
-	public override void WriteMultipleRegisters(int devId, int startAddress, int[] values)
+	public override void WriteMultipleRegisters(int devId, int startAddress, short[] values)
 	{
 		_lg?.MethodEnter("ModBusClientTcp.WriteMultipleRegisters");
 		try

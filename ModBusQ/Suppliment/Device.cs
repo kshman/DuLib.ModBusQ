@@ -10,8 +10,8 @@ internal class Device(int id)
 
 	private readonly HashSet<int> _coils = [];
 	private readonly HashSet<int> _discrete_inputs = [];
-	private readonly Dictionary<int, ushort> _input_registers = [];
-	private readonly Dictionary<int, ushort> _holding_registers = [];
+	private readonly Dictionary<int, short> _input_registers = [];
+	private readonly Dictionary<int, short> _holding_registers = [];
 
 	public byte Id { get; } = (byte)id;
 
@@ -79,7 +79,7 @@ internal class Device(int id)
 		}
 	}
 
-	public ushort GetInputRegister(int address)
+	public short GetInputRegister(int address)
 	{
 		using (_lock_input_registers.GetReadLock())
 		{
@@ -89,7 +89,7 @@ internal class Device(int id)
 		return 0;
 	}
 
-	public void SetInputRegister(int address, ushort value)
+	public void SetInputRegister(int address, short value)
 	{
 		using (_lock_input_registers.GetWriteLock())
 		{
@@ -100,7 +100,7 @@ internal class Device(int id)
 		}
 	}
 
-	public int GetHoldingRegister(int address)
+	public short GetHoldingRegister(int address)
 	{
 		using (_lock_holding_registers.GetReadLock())
 		{
@@ -110,18 +110,18 @@ internal class Device(int id)
 		return 0;
 	}
 
-	public void SetHoldingRegister(int address, int value)
+	public void SetHoldingRegister(int address, short value)
 	{
 		using (_lock_holding_registers.GetWriteLock())
 		{
 			if (value > 0)
-				_holding_registers[address] = (ushort)value;
+				_holding_registers[address] = value;
 			else
 				_holding_registers.Remove(address);
 		}
 	}
 
-	public void SetHoldingRegisters(int address, int[] values)
+	public void SetHoldingRegisters(int address, short[] values)
 	{
 		using (_lock_holding_registers.GetWriteLock())
 		{
@@ -129,7 +129,7 @@ internal class Device(int id)
 			{
 				var addr = address + i;
 				if (values[i] > 0)
-					_holding_registers[addr] = (ushort)values[i];
+					_holding_registers[addr] = values[i];
 				else
 					_holding_registers.Remove(addr);
 			}
