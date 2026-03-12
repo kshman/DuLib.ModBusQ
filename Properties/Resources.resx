@@ -120,6 +120,9 @@
   <data name="AddressOutOfRange" xml:space="preserve">
     <value>주소가 지원 범위를 넘었어요</value>
   </data>
+  <data name="BufferTooLarge" xml:space="preserve">
+    <value>처리할 버퍼가 너무 큽니다</value>
+  </data>
   <data name="ConnectionFail" xml:space="preserve">
     <value>연결 실패</value>
   </data>

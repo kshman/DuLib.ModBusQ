@@ -43,7 +43,7 @@ public class ModBusServerUdp(int port = 502, ILogger? logger = null) : ModBusSer
 		if (IsRunning)
 			return;
 
-		_lg?.MethodEnter("ModBusServerUdp.Start");
+		_logger?.MethodEnter("ModBusServerUdp.Start");
 
 		IsRunning = true;
 		StartTime = DateTime.Now;
@@ -72,14 +72,14 @@ public class ModBusServerUdp(int port = 502, ILogger? logger = null) : ModBusSer
 				{
 					// 이건 IOCP 강제 종료일것임
 				}
-				catch(Exception)
+				catch (Exception)
 				{
 					// 헐랭
 				}
 			}
 		}, _cts.Token);
-		
-		_lg?.MethodLeave("ModBusServerUdp.Start");
+
+		_logger?.MethodLeave("ModBusServerUdp.Start");
 	}
 
 	/// <inheritdoc/>
@@ -88,15 +88,15 @@ public class ModBusServerUdp(int port = 502, ILogger? logger = null) : ModBusSer
 		if (!IsRunning)
 			return;
 
-		_lg?.MethodEnter("ModBusServerUdp.Stop");
+		_logger?.MethodEnter("ModBusServerUdp.Stop");
 
 		IsRunning = false;
 
 		_cts?.Cancel();
 		_udp?.Close();
 		_task_listen.Wait();
-		
-		_lg?.MethodLeave("ModBusServerUdp.Stop");
+
+		_logger?.MethodLeave("ModBusServerUdp.Stop");
 	}
 
 	private void InternalReceived(UdpClientState state)

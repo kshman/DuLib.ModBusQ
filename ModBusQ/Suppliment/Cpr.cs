@@ -13,7 +13,13 @@ internal static partial class Cpr
 	public static partial void MethodLeave(this ILogger logger, string method);
 
 	[LoggerMessage(Level = LogLevel.Trace,
-		EventId = 203, Message = "{method}에서 연결이 끊긴거 같아요: {ex}")]
+		EventId = 203, Message = "{method}에서 연결 끊김: {ex}")]
 	public static partial void ProbablyDisconnected(this ILogger logger, string method, string ex);
+	[LoggerMessage(Level = LogLevel.Trace,
+		EventId = 204, Message = "{method}에서 송신 실패: {ex}")]
+	public static partial void WriteError(this ILogger logger, string method, string ex);
+	[LoggerMessage(Level = LogLevel.Trace,
+		EventId = 205, Message = "{method}에서 수신 실패: {ex}")]
+	public static partial void ReadError(this ILogger logger, string method, string ex);
 	#endregion
 }

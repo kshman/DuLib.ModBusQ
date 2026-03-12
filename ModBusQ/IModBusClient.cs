@@ -17,7 +17,7 @@ public interface IModBusClient : IDisposable
 	TimeSpan ReceiveTimeout { get; set; }
 
 	/// <summary>추가된 추적 플래그</summary>
-	ModBusTraceFlags TraceFlags { get; set; }
+	ModBusTraceMasks TraceMask { get; set; }
 
 	/// <summary>커넥션을 열어요</summary>
 	void Open();

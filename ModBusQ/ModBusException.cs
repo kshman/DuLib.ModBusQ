@@ -1,6 +1,4 @@
-﻿using System.Runtime.Serialization;
-
-namespace Du.ModBusQ;
+﻿namespace Du.ModBusQ;
 
 /// <summary>
 /// 모드버스 예외
@@ -8,7 +6,7 @@ namespace Du.ModBusQ;
 public class ModBusException : Exception
 {
 	/// <summary>오류 코드</summary>
-	public ModBusErrorCode ErrorCode = ModBusErrorCode.Unknown;
+	public ModBusErrorCode ErrorCode { get; } = ModBusErrorCode.Unknown;
 
 	/// <summary>
 	/// 컨스트럭트
@@ -65,6 +63,9 @@ public class ModBusException : Exception
 /// </summary>
 public class ModBusConnectionException : Exception
 {
+	/// <summary>오류 코드</summary>
+	public ModBusErrorCode ErrorCode { get; } = ModBusErrorCode.Unknown;
+
 	/// <summary>
 	/// 컨스트럭트
 	/// </summary>
@@ -86,5 +87,31 @@ public class ModBusConnectionException : Exception
 	public ModBusConnectionException(string message, Exception innerException)
 		: base(message, innerException)
 	{
+	}
+
+	/// <summary>
+	/// 컨스트럭트
+	/// </summary>
+	public ModBusConnectionException(ModBusErrorCode error)
+	{
+		ErrorCode = error;
+	}
+
+	/// <summary>
+	/// 컨스트럭트
+	/// </summary>
+	public ModBusConnectionException(ModBusErrorCode error, string message)
+		: base(message)
+	{
+		ErrorCode = error;
+	}
+
+	/// <summary>
+	/// 컨스트럭트
+	/// </summary>
+	public ModBusConnectionException(ModBusErrorCode error, string message, Exception innerException)
+		: base(message, innerException)
+	{
+		ErrorCode = error;
 	}
 }

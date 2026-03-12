@@ -22,7 +22,7 @@ public abstract class ModBusClientIp : IModBusClient
 	/// <inheritdoc/>
 	public TimeSpan ReceiveTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
-	public ModBusTraceFlags TraceFlags { get; set; } = ModBusTraceFlags.None;
+	public ModBusTraceMasks TraceMask { get; set; } = ModBusTraceMasks.None;
 
 	/// <summary>데이터를 받았을 때 처리 핸들러</summary>
 	public event EventHandler<ModBusBufferedEventArgs>? AfterRead;

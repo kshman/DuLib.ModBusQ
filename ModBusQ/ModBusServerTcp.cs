@@ -41,7 +41,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		if (IsRunning)
 			return;
 
-		_lg?.MethodEnter("ModBusServerTcp.Start");
+		_logger?.MethodEnter("ModBusServerTcp.Start");
 
 		IsRunning = true;
 		StartTime = DateTime.Now;
@@ -54,7 +54,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 			_listener.BeginAcceptTcpClient(InternalAcceptTcpCallback, null);
 		}, _cts.Token);
 
-		_lg?.MethodLeave("ModBusServerTcp.Start");
+		_logger?.MethodLeave("ModBusServerTcp.Start");
 	}
 
 	/// <inheritdoc/>
@@ -63,7 +63,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		if (!IsRunning)
 			return;
 
-		_lg?.MethodEnter("ModBusServerTcp.Stop");
+		_logger?.MethodEnter("ModBusServerTcp.Stop");
 
 		IsRunning = false;
 
@@ -79,7 +79,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 			_clients.Clear();
 		}
 
-		_lg?.MethodLeave("ModBusServerTcp.Stop");
+		_logger?.MethodLeave("ModBusServerTcp.Stop");
 	}
 
 	private void InternalAcceptTcpCallback(IAsyncResult res)
@@ -101,15 +101,15 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		}
 		catch (ObjectDisposedException)
 		{
-			//
+			// 개체가 제거됨
 		}
 		catch (SocketException)
 		{
-			//
+			// 소켓 오류
 		}
 		catch (IOException)
 		{
-			//
+			// IO 오류
 		}
 		catch (Exception ex)
 		{

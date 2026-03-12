@@ -12,7 +12,7 @@ namespace Du.ModBusQ;
 /// </summary>
 public class ModBusClientUdp : ModBusClientIp
 {
-	private readonly ILogger? _lg;
+	private readonly ILogger? _logger;
 
 	private uint _transactions;
 
@@ -35,7 +35,7 @@ public class ModBusClientUdp : ModBusClientIp
 	public ModBusClientUdp(IPAddress addr, int port, ILogger? logger = null)
 		: base(addr, port)
 	{
-		_lg = logger;
+		_logger = logger;
 	}
 
 	/// <summary>
@@ -53,7 +53,7 @@ public class ModBusClientUdp : ModBusClientIp
 	/// <param name="logger"></param>
 	public ModBusClientUdp(ILogger? logger = null)
 	{
-		_lg = logger;
+		_logger = logger;
 	}
 
 	/// <inheritdoc/>
@@ -61,40 +61,43 @@ public class ModBusClientUdp : ModBusClientIp
 	{
 	}
 
+	// 메소드 이름
+	private const string MethodNameOpen = "ModBusClientUdp.Open";
+
 	/// <inheritdoc/>
 	public override void Open()
 	{
-		_lg?.MethodEnter("ModBusClientUdp.Open");
+		_logger?.MethodEnter(MethodNameOpen);
 
 		InternalOpen();
 
-		_lg?.MethodLeave("ModBusClientUdp.Open");
+		_logger?.MethodLeave(MethodNameOpen);
 	}
 
 	/// <inheritdoc cref="Open()"/>
 	/// <seealso cref="ModBusClientUdp(IPAddress, int, ILogger?)"/>
 	public void Open(IPAddress address, int port)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.Open");
+		_logger?.MethodEnter(MethodNameOpen);
 
 		Address = address;
 		Port = port;
 		InternalOpen();
 
-		_lg?.MethodLeave("ModBusClientUdp.Open");
+		_logger?.MethodLeave(MethodNameOpen);
 	}
 
 	/// <inheritdoc cref="Open()"/>
 	/// <seealso cref="ModBusClientUdp(string, int, ILogger?)"/>
 	public void Open(string address, int port)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.Open");
+		_logger?.MethodEnter(MethodNameOpen);
 
 		Address = IPAddress.Parse(address);
 		Port = port;
 		InternalOpen();
 
-		_lg?.MethodLeave("ModBusClientUdp.Open");
+		_logger?.MethodLeave(MethodNameOpen);
 	}
 
 	private void InternalOpen()
@@ -106,17 +109,17 @@ public class ModBusClientUdp : ModBusClientIp
 	/// <inheritdoc/>
 	public override void Close()
 	{
-		_lg?.MethodEnter("ModBusClientUdp.Close");
+		_logger?.MethodEnter("ModBusClientUdp.Close");
 
 		if (CanInvokeConnectionChanged)
 			OnConnectionChanged(new ModBusStateChangedEventArgs(false));
 
-		_lg?.MethodLeave("ModBusClientUdp.Close");
+		_logger?.MethodLeave("ModBusClientUdp.Close");
 	}
 
 	private byte[] InternalTransfer(byte[] send_buffer, ModBusFunction channel)
 	{
-		var udp = new UdpClient();
+		using var udp = new UdpClient();
 		var ep = new IPEndPoint(Address, Port);
 		udp.Send(send_buffer, send_buffer.Length, ep);
 		if (CanInvokeAfterWrite)
@@ -139,7 +142,7 @@ public class ModBusClientUdp : ModBusClientIp
 	/// <inheritdoc/>
 	public override bool[] ReadCoils(int devId, int startAddress, int readCount)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.ReadCoils");
+		_logger?.MethodEnter("ModBusClientUdp.ReadCoils");
 		try
 		{
 			if (startAddress < 0 || (startAddress + readCount) > 65535)
@@ -154,7 +157,7 @@ public class ModBusClientUdp : ModBusClientIp
 			var ret = new bool[readCount];
 			for (var i = 0; i < readCount; i++)
 			{
-				var n = (int)bs[checked(9 + i / 8)];
+				var n = (int)bs[checked(9 + (i / 8))];
 				var m = (int)(Math.Pow(2, i % 8));
 				ret[i] = Convert.ToBoolean((n & m) / m);
 			}
@@ -163,14 +166,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.ReadCoils");
+			_logger?.MethodLeave("ModBusClientUdp.ReadCoils");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override bool[] ReadDiscreteInputs(int devId, int startAddress, int readCount)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.ReadDiscreteInputs");
+		_logger?.MethodEnter("ModBusClientUdp.ReadDiscreteInputs");
 		try
 		{
 			if (startAddress < 0 || (startAddress + readCount) > 65535)
@@ -185,7 +188,7 @@ public class ModBusClientUdp : ModBusClientIp
 			var ret = new bool[readCount];
 			for (var i = 0; i < readCount; i++)
 			{
-				var n = (int)bs[checked(9 + i / 8)];
+				var n = (int)bs[checked(9 + (i / 8))];
 				var m = (int)(Math.Pow(2, i % 8));
 				ret[i] = Convert.ToBoolean((n & m) / m);
 			}
@@ -194,14 +197,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.ReadDiscreteInputs");
+			_logger?.MethodLeave("ModBusClientUdp.ReadDiscreteInputs");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override short[] ReadHoldingRegisters(int devId, int startAddress, int readCount)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.ReadHoldingRegisters");
+		_logger?.MethodEnter("ModBusClientUdp.ReadHoldingRegisters");
 		try
 		{
 			if (startAddress < 0 || (startAddress + readCount) > 65535)
@@ -217,8 +220,8 @@ public class ModBusClientUdp : ModBusClientIp
 			var tb = new byte[2];
 			for (var i = 0; i < readCount; i++)
 			{
-				tb[0] = bs[checked(9 + i * 2 + 1)];
-				tb[1] = bs[checked(9 + i * 2)];
+				tb[0] = bs[checked(9 + (i * 2) + 1)];
+				tb[1] = bs[checked(9 + (i * 2))];
 				ret[i] = BitConverter.ToInt16(tb, 0);
 			}
 
@@ -226,14 +229,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.ReadHoldingRegisters");
+			_logger?.MethodLeave("ModBusClientUdp.ReadHoldingRegisters");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override short[] ReadInputRegisters(int devId, int startAddress, int readCount)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.ReadInputRegisters");
+		_logger?.MethodEnter("ModBusClientUdp.ReadInputRegisters");
 		try
 		{
 			if (startAddress < 0 || (startAddress + readCount) > 65535)
@@ -249,8 +252,8 @@ public class ModBusClientUdp : ModBusClientIp
 			var tb = new byte[2];
 			for (var i = 0; i < readCount; i++)
 			{
-				tb[0] = bs[checked(9 + i * 2 + 1)];
-				tb[1] = bs[checked(9 + i * 2)];
+				tb[0] = bs[checked(9 + (i * 2) + 1)];
+				tb[1] = bs[checked(9 + (i * 2))];
 				ret[i] = BitConverter.ToInt16(tb, 0);
 			}
 
@@ -258,14 +261,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.ReadInputRegisters");
+			_logger?.MethodLeave("ModBusClientUdp.ReadInputRegisters");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override byte[] ReadRawHoldingRegisters(int devId, int startAddress, int readCount)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.ReadRawHoldingRegisters");
+		_logger?.MethodEnter("ModBusClientUdp.ReadRawHoldingRegisters");
 		try
 		{
 			if (startAddress < 0 || (startAddress + readCount) > 65535)
@@ -285,14 +288,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.ReadRawHoldingRegisters");
+			_logger?.MethodLeave("ModBusClientUdp.ReadRawHoldingRegisters");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override byte[] ReadRawInputRegisters(int devId, int startAddress, int readCount)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.ReadRawInputRegisters");
+		_logger?.MethodEnter("ModBusClientUdp.ReadRawInputRegisters");
 		try
 		{
 			if (startAddress < 0 || (startAddress + readCount) > 65535)
@@ -312,14 +315,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.ReadRawInputRegisters");
+			_logger?.MethodLeave("ModBusClientUdp.ReadRawInputRegisters");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override void WriteSingleCoil(int devId, int startAddress, bool value)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.WriteSingleCoil");
+		_logger?.MethodEnter("ModBusClientUdp.WriteSingleCoil");
 		try
 		{
 			if (startAddress is < 0 or > 65535)
@@ -332,14 +335,14 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.WriteSingleCoil");
+			_logger?.MethodLeave("ModBusClientUdp.WriteSingleCoil");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override void WriteSingleRegister(int devId, int startAddress, short value)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.WriteSingleRegister");
+		_logger?.MethodEnter("ModBusClientUdp.WriteSingleRegister");
 		try
 		{
 			if (startAddress is < 0 or > 65535)
@@ -351,21 +354,21 @@ public class ModBusClientUdp : ModBusClientIp
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.WriteSingleRegister");
+			_logger?.MethodLeave("ModBusClientUdp.WriteSingleRegister");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override void WriteMultipleCoils(int devId, int startAddress, bool[] values)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.WriteMultipleCoils");
+		_logger?.MethodEnter("ModBusClientUdp.WriteMultipleCoils");
 		try
 		{
 			if (startAddress is < 0 or > 65535)
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 
 			var count = (values.Length % 8) != 0
-				? checked((byte)(values.Length / 8 + 1))
+				? checked((byte)((values.Length / 8) + 1))
 				: checked((byte)(values.Length / 8));
 			var size = 14 + count + 1;
 
@@ -379,21 +382,21 @@ public class ModBusClientUdp : ModBusClientIp
 				if (i % 8 == 0)
 					b = 0;
 				b = (byte)((!values[i] ? 0 : 1) << (i % 8) | b);
-				bs[13 + i / 8] = b;
+				bs[13 + (i / 8)] = b;
 			}
 
 			InternalTransfer(bs, ModBusFunction.WriteMultipleCoils);
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.WriteMultipleCoils");
+			_logger?.MethodLeave("ModBusClientUdp.WriteMultipleCoils");
 		}
 	}
 
 	/// <inheritdoc/>
 	public override void WriteMultipleRegisters(int devId, int startAddress, short[] values)
 	{
-		_lg?.MethodEnter("ModBusClientUdp.WriteMultipleRegisters");
+		_logger?.MethodEnter("ModBusClientUdp.WriteMultipleRegisters");
 		try
 		{
 			if (startAddress is < 0 or > 65535)
@@ -409,15 +412,15 @@ public class ModBusClientUdp : ModBusClientIp
 			for (var i = 0; i < values.Length; i++)
 			{
 				var tb = BitConverter.GetBytes(values[i]);
-				bs[13 + i * 2] = tb[1];
-				bs[14 + i * 2] = tb[0];
+				bs[13 + (i * 2)] = tb[1];
+				bs[14 + (i * 2)] = tb[0];
 			}
 
 			InternalTransfer(bs, ModBusFunction.WriteMultipleRegisters);
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusClientUdp.WriteMultipleRegisters");
+			_logger?.MethodLeave("ModBusClientUdp.WriteMultipleRegisters");
 		}
 	}
 }

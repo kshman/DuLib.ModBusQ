@@ -10,11 +10,25 @@ namespace Du.ModBusQ;
 /// </summary>
 public abstract class ModBusServer : IModBusServer
 {
-	/// <summary></summary>
-	protected readonly ILogger? _lg;
+    /// <summary>
+	/// 로깅에 사용되는 <see cref="ILogger"/> 인스턴스입니다.
+	/// </summary>
+	protected readonly ILogger? _logger;
 
 	private readonly ConcurrentDictionary<int, Device> _devices = new();
 	private int _func_enable = int.MaxValue;
+
+	// Logger method name constants
+	private const string MethodNameHandleRequestBuffer = "ModBusServer.HandleRequestBuffer";
+	private const string MethodNameHandleRequest = "ModBusServer.HandleRequest";
+	private const string MethodNameReadCoils = "ModBusServer.ReadCoils";
+	private const string MethodNameReadDiscreteInputs = "ModBusServer.ReadDiscreteInputs";
+	private const string MethodNameReadHoldingRegisters = "ModBusServer.ReadHoldingRegisters";
+	private const string MethodNameReadInputRegisters = "ModBusServer.ReadInputRegisters";
+	private const string MethodNameWriteSingleCoil = "ModBusServer.WriteSingleCoil";
+	private const string MethodNameWriteSingleRegister = "ModBusServer.WriteSingleRegister";
+	private const string MethodNameWriteMultipleCoils = "ModBusServer.WriteMultipleCoils";
+	private const string MethodNameWriteMultipleRegister = "ModBusServer.WriteMultipleRegister";
 
 	/// <inheritdoc/>
 	public abstract ModBusConnection ConnectionType { get; }
@@ -32,30 +46,50 @@ public abstract class ModBusServer : IModBusServer
 	public TimeSpan ReceiveTimeout { get; set; } = TimeSpan.FromSeconds(5);
 
 	/// <inheritdoc/>
-	public ModBusTraceFlags TraceFlags { get; set; } = ModBusTraceFlags.None;
+	public ModBusTraceMasks TraceMask { get; set; } = ModBusTraceMasks.None;
 
-	/// <summary></summary>
+ /// <summary>
+	/// 코일(디지털 출력) 값이 변경되었을 때 발생하는 이벤트입니다.
+	/// </summary>
 	public event EventHandler<ModBusAddressEventArgs>? CoilsChanged;
 
-	/// <summary></summary>
+	/// <summary>
+	/// 홀딩 레지스터(아날로그 출력) 값이 변경되었을 때 발생하는 이벤트입니다.
+	/// </summary>
 	public event EventHandler<ModBusAddressEventArgs>? HoldingRegistersChanged;
 
-	/// <summary></summary>
+	/// <summary>
+	/// 클라이언트가 서버에 연결되었을 때 발생하는 이벤트입니다.
+	/// </summary>
 	public event EventHandler<ModBusClientEventArgs>? ClientConnected;
 
-	/// <summary></summary>
+	/// <summary>
+	/// 클라이언트 연결이 종료되었을 때 발생하는 이벤트입니다.
+	/// </summary>
 	public event EventHandler<ModBusClientEventArgs>? ClientDisconnected;
 
-	/// <summary></summary>
+ /// <summary>
+	/// 코일 변경 이벤트를 호출합니다.
+	/// </summary>
+	/// <param name="e">이벤트 인자</param>
 	protected void OnCoilsChanged(ModBusAddressEventArgs e) => CoilsChanged?.Invoke(this, e);
 
-	/// <summary></summary>
+ /// <summary>
+	/// 홀딩 레지스터 변경 이벤트를 호출합니다.
+	/// </summary>
+	/// <param name="e">이벤트 인자</param>
 	protected void OnHoldingRegistersChanged(ModBusAddressEventArgs e) => HoldingRegistersChanged?.Invoke(this, e);
 
-	/// <summary></summary>
+ /// <summary>
+	/// 클라이언트 연결 이벤트를 호출합니다.
+	/// </summary>
+	/// <param name="e">이벤트 인자</param>
 	protected void OnClientConnected(ModBusClientEventArgs e) => ClientConnected?.Invoke(this, e);
 
-	/// <summary></summary>
+ /// <summary>
+	/// 클라이언트 연결 종료 이벤트를 호출합니다.
+	/// </summary>
+	/// <param name="e">이벤트 인자</param>
 	protected void OnClientDisconnected(ModBusClientEventArgs e) => ClientDisconnected?.Invoke(this, e);
 
 	/// <summary>
@@ -64,7 +98,7 @@ public abstract class ModBusServer : IModBusServer
 	/// <param name="logger"></param>
 	protected ModBusServer(ILogger? logger)
 	{
-		_lg = logger;
+		_logger = logger;
 
 		// 디바이스 두개 만들어 놓기
 		AddDevice(0);
@@ -133,9 +167,9 @@ public abstract class ModBusServer : IModBusServer
 	/// </summary>
 	/// <param name="buffer"></param>
 	/// <returns></returns>
-	protected byte[] HandleRequestBuffer(byte[] buffer)
+     protected byte[] HandleRequestBuffer(byte[] buffer)
 	{
-		_lg?.MethodEnter("ModBusServer.HandleRequestBuffer");
+		_logger?.MethodEnter(MethodNameHandleRequestBuffer);
 		try
 		{
 			var rsp = InternalHandleRequest(new Request(buffer));
@@ -143,7 +177,7 @@ public abstract class ModBusServer : IModBusServer
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusServer.HandleRequestBuffer");
+           _logger?.MethodLeave(MethodNameHandleRequestBuffer);
 		}
 	}
 
@@ -152,20 +186,24 @@ public abstract class ModBusServer : IModBusServer
 	/// </summary>
 	/// <param name="buffer"></param>
 	/// <returns></returns>
-	protected object HandleRequest(byte[] buffer)
+   protected object HandleRequest(byte[] buffer)
 	{
-		_lg?.MethodEnter("ModBusServer.HandleRequest");
+		_logger?.MethodEnter(MethodNameHandleRequest);
 		try
 		{
 			return InternalHandleRequest(new Request(buffer));
 		}
 		finally
 		{
-			_lg?.MethodLeave("ModBusServer.HandleRequest");
+             _logger?.MethodLeave(MethodNameHandleRequest);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 요청을 내부에서 처리하고 적절한 <see cref="Response"/> 를 반환합니다.
+	/// </summary>
+	/// <param name="req">처리할 요청</param>
+	/// <returns>요청 처리 결과 응답</returns>
 	private Response InternalHandleRequest(Request req)
 	{
 		if (!_devices.TryGetValue(req.Identifier, out var device))
@@ -188,10 +226,15 @@ public abstract class ModBusServer : IModBusServer
 		};
 	}
 
-	//
+  /// <summary>
+	/// 코일 상태(읽기)를 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>읽기 응답</returns>
 	private Response InternalReadCoils(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.ReadCoils");
+		_logger?.MethodEnter(MethodNameReadCoils);
 		try
 		{
 			var rsp = new Response(req, req.QuantityForBool);
@@ -213,16 +256,21 @@ public abstract class ModBusServer : IModBusServer
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.ReadCoils");
+			_logger?.MethodLeave(MethodNameReadCoils);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 디지털 입력(읽기)를 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>읽기 응답</returns>
 	private Response InternalReadDiscreteInputs(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.ReadDiscreteInputs");
+		_logger?.MethodEnter(MethodNameReadDiscreteInputs);
 		try
 		{
 			var rsp = new Response(req, req.QuantityForBool);
@@ -244,16 +292,21 @@ public abstract class ModBusServer : IModBusServer
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.ReadDiscreteInputs");
+			_logger?.MethodLeave(MethodNameReadDiscreteInputs);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 홀딩 레지스터(읽기)를 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>읽기 응답</returns>
 	private Response InternalReadHoldingRegisters(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.ReadHoldingRegisters");
+		_logger?.MethodEnter(MethodNameReadHoldingRegisters);
 		try
 		{
 			var rsp = new Response(req, req.QuantityForUshort, 125);
@@ -264,23 +317,28 @@ public abstract class ModBusServer : IModBusServer
 				{
 					var r = dev.GetHoldingRegister(req.Address + i);
 					var bs = BitConverter.GetBytes(r);
-					rsp.Buffer[9 + i * 2 + 0] = bs[1];
-					rsp.Buffer[9 + i * 2 + 1] = bs[0];
+					rsp.Buffer[9 + (i * 2) + 0] = bs[1];
+					rsp.Buffer[9 + (i * 2) + 1] = bs[0];
 				}
 			}
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.ReadHoldingRegisters");
+			_logger?.MethodLeave(MethodNameReadHoldingRegisters);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 입력 레지스터(읽기)를 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>읽기 응답</returns>
 	private Response InternalReadInputRegisters(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.ReadInputRegisters");
+		_logger?.MethodEnter(MethodNameReadInputRegisters);
 		try
 		{
 			var rsp = new Response(req, req.QuantityForUshort, 125);
@@ -291,23 +349,28 @@ public abstract class ModBusServer : IModBusServer
 				{
 					var r = dev.GetInputRegister(req.Address + i);
 					var bs = BitConverter.GetBytes(r);
-					rsp.Buffer[9 + i * 2 + 0] = bs[1];
-					rsp.Buffer[9 + i * 2 + 1] = bs[0];
+					rsp.Buffer[9 + (i * 2) + 0] = bs[1];
+					rsp.Buffer[9 + (i * 2) + 1] = bs[0];
 				}
 			}
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.ReadInputRegisters");
+			_logger?.MethodLeave(MethodNameReadInputRegisters);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 단일 코일 쓰기 요청을 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>쓰기 응답</returns>
 	private Response InternalWriteSingleCoil(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.WriteSingleCoil");
+		_logger?.MethodEnter(MethodNameWriteSingleCoil);
 		try
 		{
 			var value = req.Data[0];
@@ -328,16 +391,21 @@ public abstract class ModBusServer : IModBusServer
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.WriteSingleCoil");
+			_logger?.MethodLeave(MethodNameWriteSingleCoil);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 단일 레지스터 쓰기 요청을 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>쓰기 응답</returns>
 	private Response InternalWriteSingleRegister(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.WriteSingleRegister");
+		_logger?.MethodEnter(MethodNameWriteSingleRegister);
 		try
 		{
 			var rsp = new Response(req, 3, 128);
@@ -353,16 +421,21 @@ public abstract class ModBusServer : IModBusServer
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.WriteSingleRegister");
+			_logger?.MethodLeave(MethodNameWriteSingleRegister);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 다수의 코일을 한 번에 쓰는 요청을 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>쓰기 응답</returns>
 	private Response InternalWriteMultipleCoils(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.WriteMultipleCoils");
+		_logger?.MethodEnter(MethodNameWriteMultipleCoils);
 		try
 		{
 			var rsp = new Response(req, 3);
@@ -383,16 +456,21 @@ public abstract class ModBusServer : IModBusServer
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.WriteMultipleCoils");
+			_logger?.MethodLeave(MethodNameWriteMultipleCoils);
 		}
 	}
 
-	//
+  /// <summary>
+	/// 다수의 레지스터를 한 번에 쓰는 요청을 처리합니다.
+	/// </summary>
+	/// <param name="dev">대상 디바이스</param>
+	/// <param name="req">요청 정보</param>
+	/// <returns>쓰기 응답</returns>
 	private Response InternalWriteMultipleRegister(Device dev, Request req)
 	{
-		_lg?.MethodEnter("ModBusServer.WriteMultipleRegister");
+		_logger?.MethodEnter(MethodNameWriteMultipleRegister);
 		try
 		{
 			var rsp = new Response(req, 3);
@@ -412,9 +490,9 @@ public abstract class ModBusServer : IModBusServer
 
 			return rsp;
 		}
-		finally
+     finally
 		{
-			_lg?.MethodLeave("ModBusServer.WriteMultipleRegister");
+			_logger?.MethodLeave(MethodNameWriteMultipleRegister);
 		}
 	}
 
@@ -423,11 +501,23 @@ public abstract class ModBusServer : IModBusServer
 		return _devices.TryAdd(devId, new Device(devId));
 	}
 
+	/// <summary>
+	/// 등록된 디바이스를 제거합니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <returns>제거 성공 여부</returns>
+
 	public bool RemoveDevice(int devId)
 	{
 		return _devices.TryRemove(devId, out _);
 	}
 
+  /// <summary>
+	/// 디바이스의 코일 값을 설정합니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <param name="address">시작 주소</param>
+	/// <param name="values">설정할 값들</param>
 	public void SetCoils(int devId, int address, params bool[] values)
 	{
 		if (values.Length == 0)
@@ -441,6 +531,12 @@ public abstract class ModBusServer : IModBusServer
 		device.SetCoils(address, values);
 	}
 
+  /// <summary>
+	/// 디바이스의 홀딩 레지스터 값을 설정합니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <param name="address">시작 주소</param>
+	/// <param name="values">설정할 값들</param>
 	public void SetHoldingRegisters(int devId, int address, params short[] values)
 	{
 		if (values.Length == 0)
@@ -454,6 +550,12 @@ public abstract class ModBusServer : IModBusServer
 		device.SetHoldingRegisters(address, values);
 	}
 
+ /// <summary>
+	/// 지정된 디바이스의 코일 값을 읽어옵니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <param name="address">주소</param>
+	/// <returns>코일 값</returns>
 	public bool GetCoil(int devId, int address)
 	{
 		if (address is < 0 or > 65535)
@@ -463,6 +565,12 @@ public abstract class ModBusServer : IModBusServer
 		return device.GetCoil(address);
 	}
 
+    /// <summary>
+	/// 지정된 디바이스의 디지털 입력 값을 읽어옵니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <param name="address">주소</param>
+	/// <returns>입력 값</returns>
 	public bool GetDiscreteInput(int devId, int address)
 	{
 		if (address is < 0 or > 65535)
@@ -472,6 +580,12 @@ public abstract class ModBusServer : IModBusServer
 		return device.GetDiscreteInput(address);
 	}
 
+ /// <summary>
+	/// 지정된 디바이스의 홀딩 레지스터 값을 읽어옵니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <param name="address">주소</param>
+	/// <returns>레지스터 값</returns>
 	public short GetHoldingRegister(int devId, int address)
 	{
 		if (address is < 0 or > 65535)
@@ -481,6 +595,12 @@ public abstract class ModBusServer : IModBusServer
 		return device.GetHoldingRegister(address);
 	}
 
+   /// <summary>
+	/// 지정된 디바이스의 입력 레지스터 값을 읽어옵니다.
+	/// </summary>
+	/// <param name="devId">디바이스 식별자</param>
+	/// <param name="address">주소</param>
+	/// <returns>레지스터 값</returns>
 	public short GetInputRegister(int devId, int address)
 	{
 		if (address is < 0 or > 65535)

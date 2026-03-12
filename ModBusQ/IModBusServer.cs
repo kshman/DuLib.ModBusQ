@@ -18,7 +18,7 @@ public interface IModBusServer : IDisposable
 	TimeSpan ReceiveTimeout { get; set; }
 
 	/// <summary>추가된 추적 플래그</summary>
-	ModBusTraceFlags TraceFlags { get; set; }
+	ModBusTraceMasks TraceMask { get; set; }
 
 	void Start();
 	void Stop();

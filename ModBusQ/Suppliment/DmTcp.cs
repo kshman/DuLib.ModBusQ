@@ -104,7 +104,7 @@ internal class Request : Transfer
 {
 	public ushort[] Data { get; set; }
 
-	public int QuantityForBool => Quantity % 8 == 0 ? Quantity / 8 : Quantity / 8 + 1;
+	public int QuantityForBool => Quantity % 8 == 0 ? Quantity / 8 : (Quantity / 8) + 1;
 	public int QuantityForUshort => 2 * Quantity;
 
 	public Request(byte[] arr)
@@ -127,26 +127,26 @@ internal class Request : Transfer
 			case ModBusFunction.ReadInputRegisters:
 				Data = [];
 				break;
-			
+
 			case ModBusFunction.WriteSingleCoil:
 			case ModBusFunction.WriteSingleRegister:
 				Data = [Quantity];
 				break;
-			
+
 			case ModBusFunction.WriteMultipleCoils:
 				Count = arr[12];
 				Data = new ushort[Count % 2 == 0 ? Count / 2 : (Count / 2) + 1];
 				Buffer.BlockCopy(arr, 13, Data, 0, Count);
 				break;
-			
+
 			case ModBusFunction.WriteMultipleRegisters:
 				Count = arr[12];
 				Data = new ushort[Quantity];
 				for (var i = 0; i < Quantity; i++)
-					Data[i] = GetUshort(arr, 13 + i * 2);
+					Data[i] = GetUshort(arr, 13 + (i * 2));
 				break;
 
-			case ModBusFunction.EncapsulatedInterface:
+			// case ModBusFunction.EncapsulatedInterface:
 			default:
 				Data = [];
 				break;

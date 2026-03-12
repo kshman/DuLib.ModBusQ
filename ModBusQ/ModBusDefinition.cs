@@ -120,7 +120,7 @@ public enum ModBusErrorCode : byte
 	/// <summary>슬레이브 장치 실패</summary>
 	[Description("슬레이브 장치 실패")]
 	SlaveDeviceFailure = 4,
-	/// <summary></summary>
+	/// <summary>승인</summary>
 	[Description("승인")]
 	Acknowledge = 5,
 	/// <summary>슬레이브 장치 바쁨</summary>
@@ -139,6 +139,16 @@ public enum ModBusErrorCode : byte
 	[Description("게이트웨이 대상 장치가 반응이 없음")]
 	GatewayTargetDevice = 11,
 
+	/// <summary>연결 끊김</summary>
+	[Description("연결 끊김")]
+	Disconnected = 192,
+	/// <summary>연결 실패</summary>
+	[Description("연결 실패")]
+	ConnectionFail = 193,
+	/// <summary>시간 초과</summary>
+	[Description("시간 초과")]
+	ConnectionTimeout = 194,
+
 	/// <summary>알 수 없어요</summary>
 	[Description("알 수 없어요")]
 	Unknown = 255,
@@ -151,7 +161,8 @@ public enum ModBusErrorCode : byte
 /// <remarks>Use this enumeration to control the level of detail captured during ModBus data tracing. Flags can be
 /// combined to enable tracing for read operations, write operations, or both. This enumeration supports bitwise
 /// combination of its member values.</remarks>
-public enum ModBusTraceFlags
+[Flags]
+public enum ModBusTraceMasks
 {
 	/// <summary>없음</summary>
 	None = 0,

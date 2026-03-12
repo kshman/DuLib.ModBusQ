@@ -47,7 +47,7 @@ internal static class LockerOfReaderWriter
 	}
 }
 
-internal class DisposableRwLocks(ReaderWriterLockSlim l, DisposableRwLocks.Mode m) : IDisposable
+internal sealed class DisposableRwLocks : IDisposable
 {
 	internal enum Mode
 	{
@@ -57,35 +57,50 @@ internal class DisposableRwLocks(ReaderWriterLockSlim l, DisposableRwLocks.Mode 
 		Write,
 	}
 
-	private readonly ReaderWriterLockSlim _l = l;
-	private Mode _m = m;
+	private readonly ReaderWriterLockSlim _l;
+	private Mode _m;
+	private bool _disposed;
+
+	internal DisposableRwLocks(ReaderWriterLockSlim l, Mode m)
+	{
+		_l = l ?? throw new ArgumentNullException(nameof(l));
+		_m = m;
+	}
 
 	public void Dispose()
 	{
-		switch (_m)
+		Dispose(true);
+		GC.SuppressFinalize(this);
+	}
+
+	private void Dispose(bool disposing)
+	{
+		if (_disposed)
+			return;
+
+		if (disposing)
 		{
-			case Mode.None:
-				return;
+			switch (_m)
+			{
+				case Mode.Read:
+					_l.ExitReadLock();
+					break;
 
-			case Mode.Read:
-				_l.ExitReadLock();
-				break;
+				case Mode.UpgradableRead when _l.IsWriteLockHeld:
+					_l.ExitWriteLock();
+					break;
 
-			case Mode.UpgradableRead when _l.IsWriteLockHeld:
-				_l.ExitWriteLock();
-				break;
+				case Mode.UpgradableRead:
+					_l.ExitUpgradeableReadLock();
+					break;
 
-			case Mode.UpgradableRead:
-				_l.ExitUpgradeableReadLock();
-				break;
-
-			case Mode.Write:
-				_l.ExitWriteLock();
-				break;
-
-			default:
-				_m = Mode.None;
-				break;
+				case Mode.Write:
+					_l.ExitWriteLock();
+					break;
+			}
 		}
+
+		_m = Mode.None;
+		_disposed = true;
 	}
 }
