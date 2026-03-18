@@ -8,7 +8,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
     <RepositoryUrl>https://github.com/kshman/DuLib.ModBusQ</RepositoryUrl>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <Title>DuLib.ModBusQ</Title>
     <PackageId>DuLib.ModBusQ</PackageId>
     <Product>DuLib.ModBusQ</Product>
