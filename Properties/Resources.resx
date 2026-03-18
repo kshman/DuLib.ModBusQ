@@ -118,55 +118,55 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AddressOutOfRange" xml:space="preserve">
-    <value>주소가 지원 범위를 넘었어요</value>
+    <value>Address is out of supported range.</value>
   </data>
   <data name="BufferTooLarge" xml:space="preserve">
-    <value>처리할 버퍼가 너무 큽니다</value>
+    <value>The buffer to process is too large.</value>
   </data>
   <data name="ConnectionFail" xml:space="preserve">
-    <value>연결 실패</value>
+    <value>Connection failed.</value>
   </data>
   <data name="ConnectionTimeout" xml:space="preserve">
-    <value>연결 타임 아웃</value>
+    <value>Connection timed out.</value>
   </data>
   <data name="CountOutOfRange" xml:space="preserve">
-    <value>개수가 지원 범위를 넘었어요</value>
+    <value>Count is out of supported range.</value>
   </data>
   <data name="ErrorOnRead" xml:space="preserve">
-    <value>읽기에 오류가 있어요</value>
+    <value>An error occurred while reading.</value>
   </data>
   <data name="ExceptionArgument" xml:space="preserve">
-    <value>인수가 잘못됐어요</value>
+    <value>Invalid argument.</value>
   </data>
   <data name="ExceptionEnterRead" xml:space="preserve">
-    <value>읽으러 들어오는데 예외가 있어요</value>
+    <value>Exception occurred entering read.</value>
   </data>
   <data name="ExceptionEnterUpgradableRead" xml:space="preserve">
-    <value>읽으러 들어오는데 예외가 있어요</value>
+    <value>Exception occurred entering upgradable read.</value>
   </data>
   <data name="ExceptionEnterWrite" xml:space="preserve">
-    <value>쓰러 들어오는데 에외가 있어요</value>
+    <value>Exception occurred entering write.</value>
   </data>
   <data name="FunctionCodeNotSupport" xml:space="preserve">
-    <value>지원하지 않는 기능 코드예요</value>
+    <value>Function code not supported.</value>
   </data>
   <data name="GetConnectionFirst" xml:space="preserve">
-    <value>연결부터 해야해요</value>
+    <value>Please establish a connection first.</value>
   </data>
   <data name="InvalidCount" xml:space="preserve">
-    <value>개수가 잘못됐어요</value>
+    <value>Invalid count.</value>
   </data>
   <data name="InvalidStartAddress" xml:space="preserve">
-    <value>시작 주소 범위가 잘못됐어요</value>
+    <value>Invalid start address.</value>
   </data>
   <data name="RegisterCountIsNotFour" xml:space="preserve">
-    <value>레지스터 배열 개수가 넷이 아니예요</value>
+    <value>Register count is not four.</value>
   </data>
   <data name="RegisterCountIsNotTwo" xml:space="preserve">
-    <value>레지스터 배열 개수가 둘이 아니예요</value>
+    <value>Register count is not two.</value>
   </data>
   <data name="UdpUnreachableDestination" xml:space="preserve">
-    <value>UDP 연결이 도달할 수 없는 대상입니다</value>
+    <value>UDP destination is unreachable.</value>
   </data>
   <data name="WhatsModBusQ" xml:space="preserve">
     <value>DuLib.ModBusQ</value>
