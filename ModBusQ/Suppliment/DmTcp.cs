@@ -5,15 +5,24 @@ namespace Du.ModBusQ.Suppliment;
 
 internal static class DmTcp
 {
+	/// <summary>
+	/// NetworkStream에 바이트 배열을 모두 씁니다.
+	/// </summary>
 	internal static void StreamWrite(this NetworkStream nst, byte[] buffer)
 	{
 		nst.Write(buffer, 0, buffer.Length);
 	}
 
-	internal static byte[] StreamRead(this NetworkStream nst, int count, out int read)
+	/// <summary>
+	/// NetworkStream에서 지정한 바이트 수만큼 읽어 바이트 배열을 반환합니다.
+	/// </summary>
+	/// <param name="stream">데이터를 읽을 NetworkStream입니다.</param>
+	/// <param name="count">읽을 최대 바이트 수입니다.</param>
+	/// <param name="read">실제로 읽은 바이트 수가 out 파라미터로 반환됩니다.</param>
+	internal static byte[] StreamRead(this NetworkStream stream, int count, out int read)
 	{
 		var buffer = new byte[count];
-		read = nst.Read(buffer, 0, count);
+		read = stream.Read(buffer, 0, count);
 		return buffer;
 	}
 
@@ -56,15 +65,21 @@ internal static class DmTcp
 
 internal class UdpClientState(IPEndPoint endPoint, byte[] data)
 {
+	/// <summary>패킷 송신자 엔드포인트</summary>
 	public IPEndPoint EndPoint { get; set; } = endPoint;
+	/// <summary>수신된 바이트 버퍼</summary>
 	public byte[] Buffer { get; set; } = data;
 }
 
 internal class TcpClientState
 {
+	/// <summary>클라이언트에서 수신할 버퍼입니다.</summary>
 	public byte[] Buffer { get; init; }
+	/// <summary>클라이언트의 네트워크 스트림입니다.</summary>
 	public NetworkStream Stream { get; init; }
+	/// <summary>마지막으로 활동한 시간의 틱 값입니다.</summary>
 	public long AliveTick { get; private set; }
+	/// <summary>원격 클라이언트의 엔드포인트 정보입니다.</summary>
 	public IPEndPoint RemoteEndPoint { get; set; }
 
 	public TcpClientState(TcpClient tcp)
@@ -76,9 +91,15 @@ internal class TcpClientState
 		Invalidate();
 	}
 
+	/// <summary>
+	/// AliveTick을 현재 시각으로 갱신합니다.
+	/// </summary>
 	public void Invalidate()
 		=> AliveTick = DateTime.Now.Ticks;
 
+	/// <summary>
+	/// 연결이 끊긴 상태로 표시합니다.
+	/// </summary>
 	public void MarkDisconnected()
 		=> AliveTick = 0;
 }

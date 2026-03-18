@@ -32,10 +32,10 @@ public abstract class ModBusClientIp : IModBusClient
 	public event EventHandler<ModBusStateChangedEventArgs>? ConnectionChanged;
 
 	/// <summary>
-	/// 새 인스턴스를 만들어요
+	/// IP 기반 클라이언트의 기본 생성자입니다. 대상 주소와 포트를 지정합니다.
 	/// </summary>
-	/// <param name="addr"></param>
-	/// <param name="port"></param>
+	/// <param name="addr">대상 서버의 IP 주소입니다.</param>
+	/// <param name="port">대상 서버의 포트 번호입니다.</param>
 	protected ModBusClientIp(IPAddress addr, int port)
 	{
 		Address = addr;
@@ -43,15 +43,15 @@ public abstract class ModBusClientIp : IModBusClient
 	}
 
 	/// <summary>
-	/// 새 인스턴스를 만들어요
+	/// 문자열 주소를 사용하여 클라이언트를 초기화합니다. 내부적으로 <see cref="IPAddress.Parse(string)"/>를 사용합니다.
 	/// </summary>
-	/// <param name="address"></param>
-	/// <param name="port"></param>
+	/// <param name="address">연결할 대상의 IP 주소 문자열입니다. 예: "192.168.0.10"</param>
+	/// <param name="port">연결할 대상의 포트 번호입니다.</param>
 	protected ModBusClientIp(string address, int port)
 		: this(IPAddress.Parse(address), port) { }
 
 	/// <summary>
-	/// 새 인스턴스를 만들어요
+	/// 기본 생성자: 루프백 주소와 기본 포트(502)로 초기화합니다.
 	/// </summary>
 	protected ModBusClientIp()
 	{
@@ -106,27 +106,27 @@ public abstract class ModBusClientIp : IModBusClient
 	public abstract void WriteMultipleRegisters(int devId, int startAddress, short[] values);
 
 	/// <summary>
-	/// 읽고난 뒤 대리자 호출
+	/// 데이터를 수신한 후 호출되는 내부 헬퍼입니다.
 	/// </summary>
-	/// <param name="e"></param>
+	/// <param name="e">수신된 데이터 정보를 포함하는 이벤트 인수입니다.</param>
 	protected virtual void OnAfterRead(ModBusBufferedEventArgs e)
 	{
 		AfterRead?.Invoke(this, e);
 	}
 
 	/// <summary>
-	/// 쓰고난 뒤 대리자 호출
+	/// 데이터를 송신한 후 호출되는 내부 헬퍼입니다.
 	/// </summary>
-	/// <param name="e"></param>
+	/// <param name="e">송신한 데이터 정보를 포함하는 이벤트 인수입니다.</param>
 	protected virtual void OnAfterWrite(ModBusBufferedEventArgs e)
 	{
 		AfterWrite?.Invoke(this, e);
 	}
 
 	/// <summary>
-	/// 접속 상태가 바뀌면 호출
+	/// 연결 상태가 변경되었을 때 호출되는 내부 헬퍼입니다.
 	/// </summary>
-	/// <param name="e"></param>
+	/// <param name="e">연결 상태 변경 정보를 포함하는 이벤트 인수입니다.</param>
 	protected virtual void OnConnectionChanged(ModBusStateChangedEventArgs e)
 	{
 		ConnectionChanged?.Invoke(this, e);

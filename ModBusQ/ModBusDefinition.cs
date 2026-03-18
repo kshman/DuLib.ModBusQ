@@ -155,12 +155,10 @@ public enum ModBusErrorCode : byte
 }
 
 /// <summary>
-/// Specifies trace flag options for ModBus communication, indicating which types of data operations are included in
-/// tracing.
+/// ModBus 통신에 대한 추적(트레이스) 옵션을 지정하는 열거형입니다. 어떤 종류의 데이터 작업을 추적할지 설정합니다.
 /// </summary>
-/// <remarks>Use this enumeration to control the level of detail captured during ModBus data tracing. Flags can be
-/// combined to enable tracing for read operations, write operations, or both. This enumeration supports bitwise
-/// combination of its member values.</remarks>
+/// <remarks>이 열거형을 사용하여 ModBus 데이터 추적의 상세 수준을 제어할 수 있습니다. 읽기/쓰기 또는 둘 다에 대해
+/// 추적을 활성화하려면 플래그를 조합해서 사용하세요. 이 열거형은 비트 연산으로 구성할 수 있습니다.</remarks>
 [Flags]
 public enum ModBusTraceMasks
 {

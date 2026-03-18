@@ -7,12 +7,7 @@ namespace Du.ModBusQ;
 /// <summary>
 /// TCP 서버
 /// </summary>
-/// <remarks>
-/// 새 인스턴스를 만들어요
-/// </remarks>
-/// <param name="port"></param>
-/// <param name="logger"></param>
-public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusServerIp(port, logger)
+public class ModBusServerTcp : ModBusServerIp
 {
 	private readonly Lock _lock = new();
 
@@ -28,6 +23,16 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 	/// <summary>연결 유지 시간</summary>
 	public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromHours(1);
 
+  /// <summary>
+  /// TCP 서버 인스턴스를 생성합니다.
+  /// </summary>
+  /// <param name="port">서버가 바인드할 로컬 포트 번호입니다. 기본값은 502입니다.</param>
+  /// <param name="logger">로깅을 위해 사용할 선택적 <see cref="Microsoft.Extensions.Logging.ILogger"/> 인스턴스입니다. null을 허용합니다.</param>
+  public ModBusServerTcp(int port = 502, ILogger? logger = null) :
+		base(port, logger)
+	{
+	}
+
 	/// <inheritdoc/>
 	protected override void Dispose(bool disposing)
 	{
@@ -41,7 +46,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		if (IsRunning)
 			return;
 
-		_logger?.MethodEnter("ModBusServerTcp.Start");
+		_logger?.MethodEnter(MethodNameStart);
 
 		IsRunning = true;
 		StartTime = DateTime.Now;
@@ -54,7 +59,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 			_listener.BeginAcceptTcpClient(InternalAcceptTcpCallback, null);
 		}, _cts.Token);
 
-		_logger?.MethodLeave("ModBusServerTcp.Start");
+		_logger?.MethodLeave(MethodNameStart);
 	}
 
 	/// <inheritdoc/>
@@ -63,7 +68,7 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		if (!IsRunning)
 			return;
 
-		_logger?.MethodEnter("ModBusServerTcp.Stop");
+		_logger?.MethodEnter(MethodNameStop);
 
 		IsRunning = false;
 
@@ -79,9 +84,14 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 			_clients.Clear();
 		}
 
-		_logger?.MethodLeave("ModBusServerTcp.Stop");
+		_logger?.MethodLeave(MethodNameStop);
 	}
 
+	/// <summary>
+	/// 비동기적으로 수락된 TCP 클라이언트에 대한 콜백입니다.
+	/// 수락된 클라이언트에 대해 읽기 준비를 설정하고 접속 이벤트를 발생시킵니다.
+	/// </summary>
+	/// <param name="res">비동기 작업의 상태를 나타내는 <see cref="IAsyncResult"/> 인스턴스입니다.</param>
 	private void InternalAcceptTcpCallback(IAsyncResult res)
 	{
 		TcpClientState? state = null;
@@ -121,11 +131,17 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 			OnClientConnected(new ModBusClientEventArgs(state.RemoteEndPoint));
 	}
 
+	/// <summary>
+	/// TCP 클라이언트의 스트림에서 비동기 읽기가 완료되었을 때 호출되는 콜백입니다.
+	/// 읽기된 데이터가 없거나 오류가 발생하면 클라이언트 연결을 정리합니다.
+	/// </summary>
+	/// <param name="res">비동기 작업의 상태를 나타내는 <see cref="IAsyncResult"/> 인스턴스입니다.</param>
+	/// <exception cref="ArgumentNullException">res.AsyncState가 <see cref="TcpClientState"/>가 아닐 경우 발생합니다.</exception>
 	private void InternalReadCallback(IAsyncResult res)
 	{
 		if (res.AsyncState is not TcpClientState state)
 		{
-			// 아니 널일리가 없는데 
+			// 아니 널일리가 없는데
 			throw new ArgumentNullException(nameof(res));
 		}
 
@@ -168,6 +184,11 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		}
 	}
 
+	/// <summary>
+	/// 내부적으로 클라이언트 목록을 관리합니다. 새로운 클라이언트를 목록에 추가하고,
+	/// 연결 유지시간을 초과한 클라이언트는 제거합니다.
+	/// </summary>
+	/// <param name="state">체크할 대상인 <see cref="TcpClientState"/> 객체입니다.</param>
 	private void InternalCheckClient(TcpClientState state)
 	{
 		lock (_lock)
@@ -180,6 +201,11 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 		}
 	}
 
+	/// <summary>
+	/// 지정한 클라이언트를 연결 해제 처리합니다. 이미 해제되었거나 처리 중이면 아무 작업도 하지 않습니다.
+	/// 연결 해제 시 관련 이벤트를 호출하고 내부 목록을 정리합니다.
+	/// </summary>
+	/// <param name="state">해제할 대상인 <see cref="TcpClientState"/> 객체입니다.</param>
 	private void InternalClientDisconnect(TcpClientState state)
 	{
 		if (state.AliveTick == 0)
@@ -203,17 +229,19 @@ public class ModBusServerTcp(int port = 502, ILogger? logger = null) : ModBusSer
 
 			// 겸사 겸사 다른 애들도 검사
 			var ticks = DateTime.Now.Ticks;
-			// 아래 두줄을 합치려면...?
-			var l = _clients.Where(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds).ToArray();
-			if (l.Length > 0)
-				_clients.RemoveAll(c => (ticks - c.AliveTick) > KeepAliveTimeout.TotalMilliseconds);
+			var timeout = KeepAliveTimeout.TotalMilliseconds;
+			var expired = _clients.Where(c => (ticks - c.AliveTick) > timeout).ToList();
 
-			foreach (var c in l)
+			foreach (var c in expired)
 			{
 				c.MarkDisconnected();
-
 				OnClientDisconnected(new ModBusClientEventArgs(c.RemoteEndPoint));
+				_clients.Remove(c);
 			}
 		}
 	}
+
+	// Logger method name constants for this class
+	private const string MethodNameStart = "ModBusServerTcp.Start";
+	private const string MethodNameStop = "ModBusServerTcp.Stop";
 }

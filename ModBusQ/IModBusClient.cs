@@ -30,7 +30,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
-	/// <returns></returns>
+	/// <returns>요청한 범위의 코일 값을 나타내는 불리언 배열입니다.</returns>
 	public bool[] ReadCoils(int devId, int startAddress, int readCount);
 	/// <summary>
 	/// 디스크릿 입력을 읽어요
@@ -38,7 +38,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
-	/// <returns></returns>
+	/// <returns>요청한 범위의 디지털 입력 값을 나타내는 불리언 배열입니다.</returns>
 	public bool[] ReadDiscreteInputs(int devId, int startAddress, int readCount);
 	/// <summary>
 	/// 홀딩 레지스터를 읽어요
@@ -46,7 +46,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
-	/// <returns>16비트 정수를 int로 저장한 배열</returns>
+	/// <returns>요청한 범위의 홀딩 레지스터 값을 포함하는 16비트 정수(short) 배열입니다.</returns>
 	public short[] ReadHoldingRegisters(int devId, int startAddress, int readCount);
 	/// <summary>
 	/// 인풋 레지스터를 읽어요
@@ -54,7 +54,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
-	/// <returns>16비트 정수를 int로 저장한 배열</returns>
+	/// <returns>요청한 범위의 입력 레지스터 값을 포함하는 16비트 정수(short) 배열입니다.</returns>
 	public short[] ReadInputRegisters(int devId, int startAddress, int readCount);
 	/// <summary>
 	/// 홀딩 레지스터를 읽어요
@@ -62,7 +62,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
-	/// <returns></returns>
+	/// <returns>요청한 범위의 홀딩 레지스터를 원시 바이트 배열로 반환합니다. (빅엔디안 순서)</returns>
 	public byte[] ReadRawHoldingRegisters(int devId, int startAddress, int readCount);
 	/// <summary>
 	/// 인풋 레지스터를 읽어요
@@ -70,7 +70,7 @@ public interface IModBusClient : IDisposable
 	/// <param name="devId">읽어올 장치 아이디</param>
 	/// <param name="startAddress">읽기 시작할 주소</param>
 	/// <param name="readCount">읽을 주소의 개수</param>
-	/// <returns></returns>
+	/// <returns>요청한 범위의 입력 레지스터를 원시 바이트 배열로 반환합니다. (빅엔디안 순서)</returns>
 	public byte[] ReadRawInputRegisters(int devId, int startAddress, int readCount);
 
 	/// <summary>

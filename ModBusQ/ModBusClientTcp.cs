@@ -12,12 +12,15 @@ namespace Du.ModBusQ;
 /// </summary>
 public class ModBusClientTcp : ModBusClientIp
 {
+	/// <summary>로깅을 위한 <see cref="ILogger"/> 인스턴스(선택).</summary>
 	private readonly ILogger? _logger;
 
+	/// <summary>TCP 연결을 관리하는 TcpClient 인스턴스입니다.</summary>
 	private TcpClient? _conn;
-	private NetworkStream? _ntst; // TCP stream
-	private bool _is_conn;
+	/// <summary>연결된 TCP의 네트워크 스트림입니다.</summary>
+	private NetworkStream? _stream;
 
+	/// <summary>트랜잭션 식별자 카운터입니다.</summary>
 	private uint _transactions;
 
 	/// <inheritdoc/>
@@ -26,8 +29,8 @@ public class ModBusClientTcp : ModBusClientIp
 	/// <inheritdoc/>
 	public override bool IsConnected
 	{
-		get => _conn != null && _ntst != null && _is_conn;
-		protected set => _is_conn = value;
+		get => _conn != null && _stream != null && field;
+		protected set;
 	}
 
 	/// <summary>
@@ -49,7 +52,9 @@ public class ModBusClientTcp : ModBusClientIp
 	/// <param name="port">연결할 대상의 포트 번호입니다.</param>
 	/// <param name="logger">로깅을 위한 <see cref="ILogger"/> 인스턴스(선택).</param>
 	public ModBusClientTcp(string address, int port, ILogger? logger = null)
-		: this(IPAddress.Parse(address), port, logger) { }
+		: this(IPAddress.Parse(address), port, logger)
+	{
+	}
 
 	/// <summary>
 	/// 새 인스턴스를 만들어요
@@ -68,28 +73,12 @@ public class ModBusClientTcp : ModBusClientIp
 			return;
 
 		_conn?.Dispose();
-		_ntst?.Dispose();
+		_stream?.Dispose();
 	}
-
-	// 메소드 이름이 여러번 나와서 상수로 빼봄
-	private const string MethodNameOpen = "ModBusClientTcp.Open";
-	private const string MethodNameClose = "ModBusClientTcp.Close";
-	private const string MethodNameReadCoils = "ModBusClientTcp.ReadCoils";
-	private const string MethodNameReadDiscreteInputs = "ModBusClientTcp.ReadDiscreteInputs";
-	private const string MethodNameReadHoldingRegisters = "ModBusClientTcp.ReadHoldingRegisters";
-	private const string MethodNameReadInputRegisters = "ModBusClientTcp.ReadInputRegisters";
-	private const string MethodNameReadRawHoldingRegisters = "ModBusClientTcp.ReadRawHoldingRegisters";
-	private const string MethodNameReadRawInputRegisters = "ModBusClientTcp.ReadRawInputRegisters";
-	private const string MethodNameWriteSingleCoil = "ModBusClientTcp.WriteSingleCoil";
-	private const string MethodNameWriteSingleRegister = "ModBusClientTcp.WriteSingleRegister";
-	private const string MethodNameWriteMultipleCoils = "ModBusClientTcp.WriteMultipleCoils";
-	private const string MethodNameWriteMultipleRegisters = "ModBusClientTcp.WriteMultipleRegisters";
-	private const string MethodNameInternalTransfer = "ModBusClientTcp.InternalTransfer";
 
 	/// <inheritdoc/>
 	public override void Open()
 	{
-
 		_logger?.MethodEnter(MethodNameOpen);
 
 		InternalOpen();
@@ -137,8 +126,8 @@ public class ModBusClientTcp : ModBusClientIp
 		try
 		{
 			_conn.EndConnect(res);
-			_ntst = _conn.GetStream();
-			_ntst.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
+			_stream = _conn.GetStream();
+			_stream.ReadTimeout = (int)ReceiveTimeout.TotalMilliseconds;
 		}
 		catch (Exception ex)
 		{
@@ -165,7 +154,7 @@ public class ModBusClientTcp : ModBusClientIp
 	{
 		try
 		{
-			_ntst?.Close();
+			_stream?.Close();
 			_conn?.Close();
 		}
 		catch
@@ -179,19 +168,24 @@ public class ModBusClientTcp : ModBusClientIp
 	}
 
 	/// <summary>
-	/// 실제 데이터를 주고받는 내부 메서드
+	/// 요청 바이트 배열을 전송하고 서버로부터 응답을 수신하여 반환합니다.
+	/// 내부적으로 쓰기/읽기 단계를 분리하여 처리합니다.
 	/// </summary>
-	private byte[] InternalTransfer(byte[] send_buffer, ModBusFunction function, int size = 2100)
+	/// <param name="buffer">전송할 요청 바이트 배열입니다.</param>
+	/// <param name="function">요청에 해당하는 ModBus 기능 코드입니다. 응답 검사에 사용됩니다.</param>
+	/// <param name="size">읽기 시 최대 버퍼 크기입니다.</param>
+	/// <returns>서버로부터 수신한 응답 바이트 배열입니다.</returns>
+	private byte[] InternalTransfer(byte[] buffer, ModBusFunction function, int size = 2100)
 	{
-		if (_ntst == null)
+		if (_stream == null)
 			throw new ModBusConnectionException(Resources.GetConnectionFirst);
-		if (send_buffer.Length == 0)
+		if (buffer.Length == 0)
 			return [];
-		if (send_buffer.Length > 2600)
-			throw new ArgumentOutOfRangeException(nameof(send_buffer), Resources.BufferTooLarge);
+		if (buffer.Length > 2600)
+			throw new ArgumentOutOfRangeException(nameof(buffer), Resources.BufferTooLarge);
 
-		InternalTransferOnWrite(_ntst, send_buffer);
-		return InternalTransferOnRead(_ntst, function, size);
+		InternalTransferOnWrite(_stream, buffer);
+		return InternalTransferOnRead(_stream, function, size);
 
 #if false
 		// 이전 코드 일단 돌아가던거라, 나중에 문제 생기면 복구해서 써야할지도 모르므로 냅둠
@@ -224,11 +218,11 @@ public class ModBusClientTcp : ModBusClientIp
 	}
 
 	// InternalTransfer에서 송신 부분
-	private void InternalTransferOnWrite(NetworkStream ntst, byte[] send_buffer)
+	private void InternalTransferOnWrite(NetworkStream stream, byte[] buffer)
 	{
 		try
 		{
-			ntst.StreamWrite(send_buffer);
+			stream.StreamWrite(buffer);
 		}
 		catch (Exception ex)
 		{
@@ -248,19 +242,19 @@ public class ModBusClientTcp : ModBusClientIp
 		}
 
 		if (CanInvokeAfterWrite)
-			OnAfterWrite(new ModBusBufferedEventArgs(send_buffer));
+			OnAfterWrite(new ModBusBufferedEventArgs(buffer));
 	}
 
 	// InternalTransfer에서 수신 부분
-	private byte[] InternalTransferOnRead(NetworkStream ntst, ModBusFunction function, int size)
+	private byte[] InternalTransferOnRead(NetworkStream stream, ModBusFunction function, int size)
 	{
-		byte[]? read_buffer;
+		byte[]? buffer;
 		int len;
 
 		try
 		{
-			read_buffer = ntst.StreamRead(size, out len);
-			if (read_buffer.Length == 0)
+			buffer = stream.StreamRead(size, out len);
+			if (buffer.Length == 0)
 				throw new OperationCanceledException("0바이트 수신, 연결이 끊어진 것으로 간주합니다.");
 		}
 		catch (Exception ex)
@@ -282,13 +276,13 @@ public class ModBusClientTcp : ModBusClientIp
 		if (CanInvokeAfterRead)
 		{
 			var copy = new byte[len];
-			Array.Copy(read_buffer, 0, copy, 0, len);
+			Array.Copy(buffer, 0, copy, 0, len);
 			OnAfterRead(new ModBusBufferedEventArgs(copy));
 		}
 
-		ThrowIf.ReadError(read_buffer, function);
+		ThrowIf.ReadError(buffer, function);
 
-		return read_buffer;
+		return buffer;
 	}
 
 	/// <inheritdoc/>
@@ -301,7 +295,7 @@ public class ModBusClientTcp : ModBusClientIp
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 			if (readCount is < 0 or > 2000)
 				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -334,7 +328,7 @@ public class ModBusClientTcp : ModBusClientIp
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 			if (readCount is < 0 or > 2000)
 				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -367,7 +361,7 @@ public class ModBusClientTcp : ModBusClientIp
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 			if (readCount is < 0 or > 125)
 				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -397,7 +391,7 @@ public class ModBusClientTcp : ModBusClientIp
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 			if (readCount is < 0 or > 125)
 				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -427,7 +421,7 @@ public class ModBusClientTcp : ModBusClientIp
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 			if (readCount is < 0 or > 125)
 				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -455,7 +449,7 @@ public class ModBusClientTcp : ModBusClientIp
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
 			if (readCount is < 0 or > 125)
 				throw new ArgumentOutOfRangeException(nameof(readCount), Resources.CountOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -481,12 +475,12 @@ public class ModBusClientTcp : ModBusClientIp
 		{
 			if (startAddress is < 0 or > 65535)
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
-			var cvalue = !value ? 0 : 65280;
+			var converted = !value ? 0 : 65280;
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
-				startAddress, cvalue, ModBusFunction.WriteSingleCoil, 6);
+				startAddress, converted, ModBusFunction.WriteSingleCoil, 6);
 
 			InternalTransfer(bs, ModBusFunction.WriteSingleCoil);
 		}
@@ -504,7 +498,7 @@ public class ModBusClientTcp : ModBusClientIp
 		{
 			if (startAddress is < 0 or > 65535)
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var bs = DmTcp.BuildTcpBuffer(devId, checked(++_transactions),
@@ -526,7 +520,7 @@ public class ModBusClientTcp : ModBusClientIp
 		{
 			if (startAddress is < 0 or > 65535)
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var count = (values.Length % 8) != 0
@@ -563,7 +557,7 @@ public class ModBusClientTcp : ModBusClientIp
 		{
 			if (startAddress is < 0 or > 65535)
 				throw new ArgumentOutOfRangeException(nameof(startAddress), Resources.AddressOutOfRange);
-			if (!(_conn?.Client.Connected ?? false) || _ntst == null)
+			if (!(_conn?.Client.Connected ?? false) || _stream == null)
 				throw new ModBusConnectionException(Resources.GetConnectionFirst);
 
 			var count = (byte)(values.Length * 2);
@@ -587,4 +581,19 @@ public class ModBusClientTcp : ModBusClientIp
 			_logger?.MethodLeave(MethodNameWriteMultipleRegisters);
 		}
 	}
+
+	// 메소드 이름이 여러번 나와서 상수로 빼봄
+	private const string MethodNameOpen = "ModBusClientTcp.Open";
+	private const string MethodNameClose = "ModBusClientTcp.Close";
+	private const string MethodNameReadCoils = "ModBusClientTcp.ReadCoils";
+	private const string MethodNameReadDiscreteInputs = "ModBusClientTcp.ReadDiscreteInputs";
+	private const string MethodNameReadHoldingRegisters = "ModBusClientTcp.ReadHoldingRegisters";
+	private const string MethodNameReadInputRegisters = "ModBusClientTcp.ReadInputRegisters";
+	private const string MethodNameReadRawHoldingRegisters = "ModBusClientTcp.ReadRawHoldingRegisters";
+	private const string MethodNameReadRawInputRegisters = "ModBusClientTcp.ReadRawInputRegisters";
+	private const string MethodNameWriteSingleCoil = "ModBusClientTcp.WriteSingleCoil";
+	private const string MethodNameWriteSingleRegister = "ModBusClientTcp.WriteSingleRegister";
+	private const string MethodNameWriteMultipleCoils = "ModBusClientTcp.WriteMultipleCoils";
+	private const string MethodNameWriteMultipleRegisters = "ModBusClientTcp.WriteMultipleRegisters";
+	private const string MethodNameInternalTransfer = "ModBusClientTcp.InternalTransfer";
 }
