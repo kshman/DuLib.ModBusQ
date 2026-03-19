@@ -1,4 +1,4 @@
-﻿using Du.ModBusQ.Suppliment;
+﻿using Du.ModBusQ.Supplement;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Sockets;
@@ -15,7 +15,7 @@ public class ModBusServerUdp : ModBusServerIp
 	private bool _rehash;
 
 	private CancellationTokenSource? _cts;
-	private Task _task_listen = Task.CompletedTask;
+	private Task _taskListen = Task.CompletedTask;
 
 	/// <inheritdoc/>
 	public override ModBusConnection ConnectionType => ModBusConnection.Udp;
@@ -67,7 +67,7 @@ public class ModBusServerUdp : ModBusServerIp
 		StartTime = DateTime.Now;
 
 		_cts = new CancellationTokenSource();
-		_task_listen = Task.Run(() =>
+		_taskListen = Task.Run(() =>
 		{
 			while (!_cts.Token.IsCancellationRequested)
 			{
@@ -90,7 +90,7 @@ public class ModBusServerUdp : ModBusServerIp
 				{
 					// 이건 IOCP 강제 종료일것임
 				}
-				catch (Exception)
+				catch
 				{
 					// 헐랭
 				}
@@ -112,7 +112,7 @@ public class ModBusServerUdp : ModBusServerIp
 
 		_cts?.Cancel();
 		_udp?.Close();
-		_task_listen.Wait();
+		_taskListen.Wait();
 
 		_logger?.MethodLeave(MethodNameStop);
 	}

@@ -8,6 +8,11 @@ namespace Du.ModBusQ;
 public static class ModBusConverter
 {
 	/// <summary>
+	/// 문자열 변환시 사용되는 트림 문자 집합(공백, 탭, 널, 개행 등).
+	/// </summary>
+	private static readonly char[] CharsForTrim = [' ', '\t', '\0', '\r', '\n'];
+
+	/// <summary>
 	/// 레지스터 배열에서 지정된 오프셋과 길이에 따라 레지스터 순서를 검사하고
 	/// 필요하면 워드(레지스터) 순서를 반전하여 새로운 배열을 반환합니다.
 	/// 이 헬퍼는 다른 변환 메서드들이 빅/리틀 엔디언 또는 레지스터 순서가 뒤집힌
@@ -60,174 +65,166 @@ public static class ModBusConverter
 		return inverse ? [.. ns.Reverse()] : ns;
 	}
 
-	/// <summary>
-	/// ModBus 레지스터 2개를 Int32 값으로 변환합니다.
-	/// 레지스터는 16비트 값으로 표현되며 내부적으로 바이트/워드 순서를 조합하여 32비트 정수를 만듭니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열(각 요소는 16비트 값).</param>
-	/// <param name="offset">변환을 시작할 레지스터 오프셋(기본: 0).</param>
-	/// <param name="inverse">레지스터 블록의 워드 순서를 반전할지 여부(기본: false).</param>
-	/// <returns>변환된 32비트 정수값.</returns>
-	/// <exception cref="ArgumentException">레지스터가 2개 미만일 때 발생합니다.</exception>
-	public static int ToModBusInt(this short[] registers, int offset = 0, bool inverse = false)
+	// 레지스터에 대한 확장 메서드들
+	extension(short[] registers)
 	{
-		if (registers.Length - offset < 2)
-			throw new ArgumentException(Resources.RegisterCountIsNotTwo);
-
-		var rs = TestInverse(inverse, registers, offset, 2);
-		var bs1 = BitConverter.GetBytes(rs[1]);
-		var bs2 = BitConverter.GetBytes(rs[0]);
-
-		return BitConverter.ToInt32(
-		[
-			bs2[0], bs2[1],
-			bs1[0], bs1[1]
-		], 0);
-	}
-
-	/// <summary>
-	/// ModBus 레지스터 4개를 Int64(롱) 값으로 변환합니다.
-	/// 4개의 16비트 레지스터를 결합하여 64비트 정수로 재구성합니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열.</param>
-	/// <param name="offset">변환 시작 오프셋(기본: 0).</param>
-	/// <param name="inverse">레지스터 워드 순서를 반전할지 여부.</param>
-	/// <returns>변환된 64비트 정수값.</returns>
-	/// <exception cref="ArgumentException">레지스터가 4개 미만일 때 발생합니다.</exception>
-	public static long ToModBusLong(this short[] registers, int offset = 0, bool inverse = false)
-	{
-		if (registers.Length - offset < 4)
-			throw new ArgumentException(Resources.RegisterCountIsNotFour);
-
-		var rs = TestInverse(inverse, registers, offset, 4);
-		var bs1 = BitConverter.GetBytes(rs[3]);
-		var bs2 = BitConverter.GetBytes(rs[2]);
-		var bs3 = BitConverter.GetBytes(rs[1]);
-		var bs4 = BitConverter.GetBytes(rs[0]);
-
-		return BitConverter.ToInt64(
-		[
-			bs4[0], bs4[1],
-			bs3[0], bs3[1],
-			bs2[0], bs2[1],
-			bs1[0], bs1[1]
-		], 0);
-	}
-
-	/// <summary>
-	/// ModBus 레지스터 2개를 IEEE 754 단정도(float) 값으로 변환합니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열.</param>
-	/// <param name="offset">변환 시작 오프셋(기본: 0).</param>
-	/// <param name="inverse">레지스터 워드 순서를 반전할지 여부.</param>
-	/// <returns>변환된 float 값.</returns>
-	/// <exception cref="ArgumentException">레지스터가 2개 미만일 때 발생합니다.</exception>
-	public static float ToModBusFloat(this short[] registers, int offset = 0, bool inverse = false)
-	{
-		if (registers.Length - offset < 2)
-			throw new ArgumentException(Resources.RegisterCountIsNotTwo);
-
-		var rs = TestInverse(inverse, registers, offset, 2);
-		var bs1 = BitConverter.GetBytes(rs[1]);
-		var bs2 = BitConverter.GetBytes(rs[0]);
-
-		return BitConverter.ToSingle(
-		[
-			bs2[0], bs2[1],
-			bs1[0], bs1[1]
-		], 0);
-	}
-
-	/// <summary>
-	/// ModBus 레지스터 4개를 IEEE 754 배정도(double) 값으로 변환합니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열.</param>
-	/// <param name="offset">변환 시작 오프셋(기본: 0).</param>
-	/// <param name="inverse">레지스터 워드 순서를 반전할지 여부.</param>
-	/// <returns>변환된 double 값.</returns>
-	/// <exception cref="ArgumentException">레지스터가 4개 미만일 때 발생합니다.</exception>
-	public static double ToModBusDouble(this short[] registers, int offset = 0, bool inverse = false)
-	{
-		if (registers.Length - offset < 4)
-			throw new ArgumentException(Resources.RegisterCountIsNotFour);
-
-		var rs = TestInverse(inverse, registers, offset, 4);
-		var bs1 = BitConverter.GetBytes(rs[3]);
-		var bs2 = BitConverter.GetBytes(rs[2]);
-		var bs3 = BitConverter.GetBytes(rs[1]);
-		var bs4 = BitConverter.GetBytes(rs[0]);
-
-		return BitConverter.ToDouble(
-		[
-			bs4[0], bs4[1],
-			bs3[0], bs3[1],
-			bs2[0], bs2[1],
-			bs1[0], bs1[1]
-		], 0);
-	}
-
-	/// <summary>
-	/// 문자열 변환시 사용되는 트림 문자 집합(공백, 탭, 널, 개행 등).
-	/// </summary>
-	private static readonly char[] s_trim_chars = [' ', '\t', '\0', '\r', '\n'];
-
-	/// <summary>
-	/// ModBus 레지스터 블록을 문자열로 변환합니다.
-	/// 각 레지스터는 2바이트이므로 length는 바이트 수를 의미하며
-	/// flip이 true이면 각 레지스터의 바이트 순서를 반전하여 처리합니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열.</param>
-	/// <param name="offset">문자열 변환을 시작할 레지스터 오프셋.</param>
-	/// <param name="length">문자열로 읽을 바이트 길이(레지스터 수 * 2).</param>
-	/// <param name="flip">레지스터 내 바이트 순서를 반전할지 여부(기본: false).</param>
-	/// <returns>UTF8로 디코딩된 문자열(널 이후는 잘라냄).</returns>
-	public static string ToModBusString(this short[] registers, int offset, int length, bool flip = false)
-	{
-		var bs = new byte[length];
-		if (flip)
+		/// <summary>
+		/// ModBus 레지스터 2개를 Int32 값으로 변환합니다.
+		/// 레지스터는 16비트 값으로 표현되며 내부적으로 바이트/워드 순서를 조합하여 32비트 정수를 만듭니다.
+		/// </summary>
+		/// <param name="offset">변환을 시작할 레지스터 오프셋(기본: 0).</param>
+		/// <param name="inverse">레지스터 블록의 워드 순서를 반전할지 여부(기본: false).</param>
+		/// <returns>변환된 32비트 정수값.</returns>
+		/// <exception cref="ArgumentException">레지스터가 2개 미만일 때 발생합니다.</exception>
+		public int ToModBusInt(int offset = 0, bool inverse = false)
 		{
-			for (var i = 0; i < length / 2; i++)
-			{
-				var tb = BitConverter.GetBytes(registers[offset + i]);
-				bs[i * 2] = tb[1];
-				bs[(i * 2) + 1] = tb[0];
-			}
-		}
-		else
-		{
-			for (var i = 0; i < length / 2; i++)
-			{
-				var tb = BitConverter.GetBytes(registers[offset + i]);
-				bs[i * 2] = tb[0];
-				bs[(i * 2) + 1] = tb[1];
-			}
+			if (registers.Length - offset < 2)
+				throw new ArgumentException(Resources.RegisterCountIsNotTwo);
+
+			var rs = TestInverse(inverse, registers, offset, 2);
+			var bs1 = BitConverter.GetBytes(rs[1]);
+			var bs2 = BitConverter.GetBytes(rs[0]);
+
+			return BitConverter.ToInt32(
+			[
+				bs2[0], bs2[1],
+				bs1[0], bs1[1]
+			], 0);
 		}
 
-		var s = Encoding.UTF8.GetString(bs).Trim(s_trim_chars);
-		var n = s.IndexOf('\0');
+		/// <summary>
+		/// ModBus 레지스터 4개를 Int64(롱) 값으로 변환합니다.
+		/// 4개의 16비트 레지스터를 결합하여 64비트 정수로 재구성합니다.
+		/// </summary>
+		/// <param name="offset">변환 시작 오프셋(기본: 0).</param>
+		/// <param name="inverse">레지스터 워드 순서를 반전할지 여부.</param>
+		/// <returns>변환된 64비트 정수값.</returns>
+		/// <exception cref="ArgumentException">레지스터가 4개 미만일 때 발생합니다.</exception>
+		public long ToModBusLong(int offset = 0, bool inverse = false)
+		{
+			if (registers.Length - offset < 4)
+				throw new ArgumentException(Resources.RegisterCountIsNotFour);
 
-		return n >= 0 ? s[..n] : s;
+			var rs = TestInverse(inverse, registers, offset, 4);
+			var bs1 = BitConverter.GetBytes(rs[3]);
+			var bs2 = BitConverter.GetBytes(rs[2]);
+			var bs3 = BitConverter.GetBytes(rs[1]);
+			var bs4 = BitConverter.GetBytes(rs[0]);
+
+			return BitConverter.ToInt64(
+			[
+				bs4[0], bs4[1],
+				bs3[0], bs3[1],
+				bs2[0], bs2[1],
+				bs1[0], bs1[1]
+			], 0);
+		}
+
+		/// <summary>
+		/// ModBus 레지스터 2개를 IEEE 754 단정도(float) 값으로 변환합니다.
+		/// </summary>
+		/// <param name="offset">변환 시작 오프셋(기본: 0).</param>
+		/// <param name="inverse">레지스터 워드 순서를 반전할지 여부.</param>
+		/// <returns>변환된 float 값.</returns>
+		/// <exception cref="ArgumentException">레지스터가 2개 미만일 때 발생합니다.</exception>
+		public float ToModBusFloat(int offset = 0, bool inverse = false)
+		{
+			if (registers.Length - offset < 2)
+				throw new ArgumentException(Resources.RegisterCountIsNotTwo);
+
+			var rs = TestInverse(inverse, registers, offset, 2);
+			var bs1 = BitConverter.GetBytes(rs[1]);
+			var bs2 = BitConverter.GetBytes(rs[0]);
+
+			return BitConverter.ToSingle(
+			[
+				bs2[0], bs2[1],
+				bs1[0], bs1[1]
+			], 0);
+		}
+
+		/// <summary>
+		/// ModBus 레지스터 4개를 IEEE 754 배정도(double) 값으로 변환합니다.
+		/// </summary>
+		/// <param name="offset">변환 시작 오프셋(기본: 0).</param>
+		/// <param name="inverse">레지스터 워드 순서를 반전할지 여부.</param>
+		/// <returns>변환된 double 값.</returns>
+		/// <exception cref="ArgumentException">레지스터가 4개 미만일 때 발생합니다.</exception>
+		public double ToModBusDouble(int offset = 0, bool inverse = false)
+		{
+			if (registers.Length - offset < 4)
+				throw new ArgumentException(Resources.RegisterCountIsNotFour);
+
+			var rs = TestInverse(inverse, registers, offset, 4);
+			var bs1 = BitConverter.GetBytes(rs[3]);
+			var bs2 = BitConverter.GetBytes(rs[2]);
+			var bs3 = BitConverter.GetBytes(rs[1]);
+			var bs4 = BitConverter.GetBytes(rs[0]);
+
+			return BitConverter.ToDouble(
+			[
+				bs4[0], bs4[1],
+				bs3[0], bs3[1],
+				bs2[0], bs2[1],
+				bs1[0], bs1[1]
+			], 0);
+		}
+
+		/// <summary>
+		/// ModBus 레지스터 블록을 문자열로 변환합니다.
+		/// 각 레지스터는 2바이트이므로 length는 바이트 수를 의미하며
+		/// flip이 true이면 각 레지스터의 바이트 순서를 반전하여 처리합니다.
+		/// </summary>
+		/// <param name="offset">문자열 변환을 시작할 레지스터 오프셋.</param>
+		/// <param name="length">문자열로 읽을 바이트 길이(레지스터 수 * 2).</param>
+		/// <param name="flip">레지스터 내 바이트 순서를 반전할지 여부(기본: false).</param>
+		/// <returns>UTF8로 디코딩된 문자열(널 이후는 잘라냄).</returns>
+		public string ToModBusString(int offset, int length, bool flip = false)
+		{
+			var bs = new byte[length];
+			if (flip)
+			{
+				for (var i = 0; i < length / 2; i++)
+				{
+					var tb = BitConverter.GetBytes(registers[offset + i]);
+					bs[i * 2] = tb[1];
+					bs[(i * 2) + 1] = tb[0];
+				}
+			}
+			else
+			{
+				for (var i = 0; i < length / 2; i++)
+				{
+					var tb = BitConverter.GetBytes(registers[offset + i]);
+					bs[i * 2] = tb[0];
+					bs[(i * 2) + 1] = tb[1];
+				}
+			}
+
+			var s = Encoding.UTF8.GetString(bs).Trim(CharsForTrim);
+			var n = s.IndexOf('\0');
+
+			return n >= 0 ? s[..n] : s;
+		}
+
+		/// <summary>
+		/// 레지스터에서 ModBus 표준 방식으로 해석한 32비트 정수값을 반환합니다.
+		/// 단순 호출 래퍼로 내부적으로 ToModBusInt를 사용합니다.
+		/// </summary>
+		/// <param name="offset">변환 시작 오프셋.</param>
+		/// <returns>32비트 정수값.</returns>
+		/// <exception cref="ArgumentException">레지스터가 부족한 경우 발생합니다.</exception>
+		public int ToModBusRawInt(int offset = 0) => registers.ToModBusInt(offset);
+
+		/// <summary>
+		/// 레지스터에서 ModBus 표준 방식으로 해석한 64비트 정수값을 반환합니다.
+		/// 내부적으로 ToModBusLong를 호출하는 래퍼입니다.
+		/// </summary>
+		/// <param name="offset">변환 시작 오프셋.</param>
+		/// <returns>64비트 정수값.</returns>
+		/// <exception cref="ArgumentException">레지스터가 부족한 경우 발생합니다.</exception>
+		public long ToModBusRawLong(int offset = 0) => registers.ToModBusLong(offset);
 	}
-
-	/// <summary>
-	/// 레지스터에서 ModBus 표준 방식으로 해석한 32비트 정수값을 반환합니다.
-	/// 단순 호출 래퍼로 내부적으로 ToModBusInt를 사용합니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열.</param>
-	/// <param name="offset">변환 시작 오프셋.</param>
-	/// <returns>32비트 정수값.</returns>
-	/// <exception cref="ArgumentException">레지스터가 부족한 경우 발생합니다.</exception>
-	public static int ToModBusRawInt(this short[] registers, int offset = 0) => ToModBusInt(registers, offset);
-
-	/// <summary>
-	/// 레지스터에서 ModBus 표준 방식으로 해석한 64비트 정수값을 반환합니다.
-	/// 내부적으로 ToModBusLong를 호출하는 래퍼입니다.
-	/// </summary>
-	/// <param name="registers">원본 레지스터 배열.</param>
-	/// <param name="offset">변환 시작 오프셋.</param>
-	/// <returns>64비트 정수값.</returns>
-	/// <exception cref="ArgumentException">레지스터가 부족한 경우 발생합니다.</exception>
-	public static long ToModBusRawLong(this short[] registers, int offset = 0) => ToModBusLong(registers, offset);
 
 	/// <summary>
 	/// 32비트 정수값을 ModBus 레지스터 배열(각 요소는 16비트)로 변환합니다.
@@ -323,7 +320,7 @@ public static class ModBusConverter
 		for (var i = 0; i < rs.Length; i++)
 		{
 			var b1 = bs[i * 2];
-			var b2 = (i * 2 + 1 < bs.Length) ? bs[i * 2 + 1] : (byte)0;
+			var b2 = ((i * 2) + 1 < bs.Length) ? bs[(i * 2) + 1] : (byte)0;
 			rs[i] = flip ? (short)((b1 << 8) | b2) : (short)((b2 << 8) | b1);
 		}
 

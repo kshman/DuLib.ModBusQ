@@ -1,4 +1,4 @@
-﻿namespace Du.ModBusQ.Suppliment;
+﻿namespace Du.ModBusQ.Supplement;
 
 // 모드버스 디바이스 구현
 /// <summary>
@@ -8,15 +8,15 @@
 /// <param name="id">디바이스 식별자(슬레이브 ID).</param>
 internal class Device(int id)
 {
-	private readonly ReaderWriterLockSlim _lock_coils = new();
-	private readonly ReaderWriterLockSlim _lock_discrete_inputs = new();
-	private readonly ReaderWriterLockSlim _lock_input_registers = new();
-	private readonly ReaderWriterLockSlim _lock_holding_registers = new();
+	private readonly ReaderWriterLockSlim _lockCoils = new();
+	private readonly ReaderWriterLockSlim _lockDiscreteInputs = new();
+	private readonly ReaderWriterLockSlim _lockInputRegisters = new();
+	private readonly ReaderWriterLockSlim _lockHoldingRegisters = new();
 
 	private readonly HashSet<int> _coils = [];
-	private readonly HashSet<int> _discrete_inputs = [];
-	private readonly Dictionary<int, short> _input_registers = [];
-	private readonly Dictionary<int, short> _holding_registers = [];
+	private readonly HashSet<int> _discreteInputs = [];
+	private readonly Dictionary<int, short> _inputRegisters = [];
+	private readonly Dictionary<int, short> _holdingRegisters = [];
 
 	/// <summary>디바이스 식별자(슬레이브 ID).</summary>
 	public byte Id { get; } = (byte)id;
@@ -28,7 +28,7 @@ internal class Device(int id)
 	/// <returns>코일이 설정되어 있으면 true, 아니면 false를 반환합니다.</returns>
 	public bool GetCoil(int address)
 	{
-		using (_lock_coils.GetReadLock())
+		using (_lockCoils.GetReadLock())
 			return _coils.Contains(address);
 	}
 
@@ -39,7 +39,7 @@ internal class Device(int id)
 	/// <param name="value">설정할 값(참이면 설정, 거짓이면 해제).</param>
 	public void SetCoil(int address, bool value)
 	{
-		using (_lock_coils.GetWriteLock())
+		using (_lockCoils.GetWriteLock())
 		{
 			switch (value)
 			{
@@ -60,7 +60,7 @@ internal class Device(int id)
 	/// <param name="values">설정할 값 배열입니다.</param>
 	public void SetCoils(int address, bool[] values)
 	{
-		using (_lock_coils.GetWriteLock())
+		using (_lockCoils.GetWriteLock())
 		{
 			for (var i = 0; i < values.Length; i++)
 			{
@@ -85,8 +85,8 @@ internal class Device(int id)
 	/// <returns>입력이 활성화되어 있으면 true를 반환합니다.</returns>
 	public bool GetDiscreteInput(int address)
 	{
-		using (_lock_discrete_inputs.GetReadLock())
-			return _discrete_inputs.Contains(address);
+		using (_lockDiscreteInputs.GetReadLock())
+			return _discreteInputs.Contains(address);
 	}
 
 	/// <summary>
@@ -96,15 +96,15 @@ internal class Device(int id)
 	/// <param name="value">설정할 값입니다.</param>
 	public void SetDiscreteInput(int address, bool value)
 	{
-		using (_lock_discrete_inputs.GetWriteLock())
+		using (_lockDiscreteInputs.GetWriteLock())
 		{
 			switch (value)
 			{
-				case true when !_discrete_inputs.Contains(address):
-					_discrete_inputs.Add(address);
+				case true when !_discreteInputs.Contains(address):
+					_discreteInputs.Add(address);
 					break;
-				case false when _discrete_inputs.Contains(address):
-					_discrete_inputs.Remove(address);
+				case false when _discreteInputs.Contains(address):
+					_discreteInputs.Remove(address);
 					break;
 			}
 		}
@@ -117,9 +117,9 @@ internal class Device(int id)
 	/// <returns>레지스터 값(없으면 0)을 반환합니다.</returns>
 	public short GetInputRegister(int address)
 	{
-		using (_lock_input_registers.GetReadLock())
+		using (_lockInputRegisters.GetReadLock())
 		{
-			if (_input_registers.TryGetValue(address, out var value))
+			if (_inputRegisters.TryGetValue(address, out var value))
 				return value;
 		}
 		return 0;
@@ -132,12 +132,12 @@ internal class Device(int id)
 	/// <param name="value">설정할 16비트 값입니다.</param>
 	public void SetInputRegister(int address, short value)
 	{
-		using (_lock_input_registers.GetWriteLock())
+		using (_lockInputRegisters.GetWriteLock())
 		{
 			if (value > 0)
-				_input_registers[address] = value;
+				_inputRegisters[address] = value;
 			else
-				_input_registers.Remove(address);
+				_inputRegisters.Remove(address);
 		}
 	}
 
@@ -148,9 +148,9 @@ internal class Device(int id)
 	/// <returns>레지스터 값(없으면 0)을 반환합니다.</returns>
 	public short GetHoldingRegister(int address)
 	{
-		using (_lock_holding_registers.GetReadLock())
+		using (_lockHoldingRegisters.GetReadLock())
 		{
-			if (_holding_registers.TryGetValue(address, out var value))
+			if (_holdingRegisters.TryGetValue(address, out var value))
 				return value;
 		}
 		return 0;
@@ -163,12 +163,12 @@ internal class Device(int id)
 	/// <param name="value">설정할 16비트 값입니다.</param>
 	public void SetHoldingRegister(int address, short value)
 	{
-		using (_lock_holding_registers.GetWriteLock())
+		using (_lockHoldingRegisters.GetWriteLock())
 		{
 			if (value > 0)
-				_holding_registers[address] = value;
+				_holdingRegisters[address] = value;
 			else
-				_holding_registers.Remove(address);
+				_holdingRegisters.Remove(address);
 		}
 	}
 
@@ -179,15 +179,15 @@ internal class Device(int id)
 	/// <param name="values">설정할 16비트 값 배열입니다.</param>
 	public void SetHoldingRegisters(int address, short[] values)
 	{
-		using (_lock_holding_registers.GetWriteLock())
+		using (_lockHoldingRegisters.GetWriteLock())
 		{
 			for (var i = 0; i < values.Length; i++)
 			{
 				var addr = address + i;
 				if (values[i] > 0)
-					_holding_registers[addr] = values[i];
+					_holdingRegisters[addr] = values[i];
 				else
-					_holding_registers.Remove(addr);
+					_holdingRegisters.Remove(addr);
 			}
 		}
 	}

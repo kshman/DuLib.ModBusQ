@@ -9,7 +9,7 @@ public abstract class ModBusClientIp : IModBusClient
 {
 	/// <summary>대상 서버의 주소</summary>
 	public IPAddress Address { get; set; }
-	/// <summary>대상 서버의 연결 포트/// </summary>
+	/// <summary>대상 서버의 연결 포트</summary>
 	public int Port { get; set; }
 
 	/// <inheritdoc/>

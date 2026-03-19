@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Du.ModBusQ.Suppliment;
+namespace Du.ModBusQ.Supplement;
 
 internal static partial class Cpr
 {

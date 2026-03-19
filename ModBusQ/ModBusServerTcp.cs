@@ -1,5 +1,5 @@
 ﻿using System.Net.Sockets;
-using Du.ModBusQ.Suppliment;
+using Du.ModBusQ.Supplement;
 using Microsoft.Extensions.Logging;
 
 namespace Du.ModBusQ;
@@ -12,7 +12,7 @@ public class ModBusServerTcp : ModBusServerIp
 	private readonly Lock _lock = new();
 
 	private CancellationTokenSource? _cts;
-	private Task _task_listen = Task.CompletedTask;
+	private Task _taskListen = Task.CompletedTask;
 
 	private TcpListener? _listener;
 	private readonly List<TcpClientState> _clients = [];
@@ -52,7 +52,7 @@ public class ModBusServerTcp : ModBusServerIp
 		StartTime = DateTime.Now;
 
 		_cts = new CancellationTokenSource();
-		_task_listen = Task.Run(() =>
+		_taskListen = Task.Run(() =>
 		{
 			_listener = new TcpListener(Address, Port);
 			_listener.Start();
@@ -75,7 +75,7 @@ public class ModBusServerTcp : ModBusServerIp
 		_listener?.Stop();
 
 		_cts?.Cancel();
-		_task_listen.Wait();
+		_taskListen.Wait();
 
 		lock (_lock)
 		{

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using Du.ModBusQ.Suppliment;
+using Du.ModBusQ.Supplement;
 using Du.Properties;
 using Microsoft.Extensions.Logging;
 
@@ -126,13 +126,13 @@ public class ModBusClientUdp : ModBusClientIp
 
 		udp.Client.ReceiveTimeout = (int)ReceiveTimeout.TotalMilliseconds;
 		var rep = new IPEndPoint(Address, lep.Port);
-		var read_buffer = udp.Receive(ref rep);
+		var readBuffer = udp.Receive(ref rep);
 		if (CanInvokeAfterRead)
-			OnAfterRead(new ModBusBufferedEventArgs(read_buffer));
+			OnAfterRead(new ModBusBufferedEventArgs(readBuffer));
 
-		ThrowIf.ReadError(read_buffer, channel);
+		ThrowIf.ReadError(readBuffer, channel);
 
-		return read_buffer;
+		return readBuffer;
 	}
 
 	/// <inheritdoc/>

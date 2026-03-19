@@ -1,7 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
-using Du.ModBusQ.Suppliment;
+using Du.ModBusQ.Supplement;
 using Du.Properties;
 using Microsoft.Extensions.Logging;
 
@@ -186,35 +186,6 @@ public class ModBusClientTcp : ModBusClientIp
 
 		InternalTransferOnWrite(_stream, buffer);
 		return InternalTransferOnRead(_stream, function, size);
-
-#if false
-		// 이전 코드 일단 돌아가던거라, 나중에 문제 생기면 복구해서 써야할지도 모르므로 냅둠
-		try
-		{
-			_ntst.StreamWrite(send_buffer);
-			if (CanInvokeAfterWrite)
-				OnAfterWrite(new ModBusBufferedEventArgs(send_buffer));
-
-			var read_buffer = _ntst.StreamRead(size, out var len);
-			if (CanInvokeAfterRead)
-			{
-				var copy = new byte[len];
-				Array.Copy(read_buffer, 0, copy, 0, len);
-				OnAfterRead(new ModBusBufferedEventArgs(copy));
-			}
-
-			ThrowIf.ReadError(read_buffer, function);
-
-			return read_buffer;
-		}
-		catch (Exception ex)
-		{
-			// 뭐지 뭐가 문제지
-			_is_conn = false;
-			_logger?.ProbablyDisconnected(MethodNameInternalTransfer, ex.Message);
-			throw;
-		}
-#endif
 	}
 
 	// InternalTransfer에서 송신 부분

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Concurrent;
-using Du.ModBusQ.Suppliment;
+using Du.ModBusQ.Supplement;
 using Du.Properties;
 using Microsoft.Extensions.Logging;
 
@@ -16,7 +16,7 @@ public abstract class ModBusServer : IModBusServer
 	protected readonly ILogger? _logger;
 
 	private readonly ConcurrentDictionary<int, Device> _devices = new();
-	private int _func_enable = int.MaxValue;
+	private int _funcEnable = int.MaxValue;
 
 	/// <inheritdoc/>
 	public abstract ModBusConnection ConnectionType { get; }
@@ -136,9 +136,9 @@ public abstract class ModBusServer : IModBusServer
 			return;
 
 		if (value)
-			_func_enable |= 1 << (int)function;
+			_funcEnable |= 1 << (int)function;
 		else
-			_func_enable &= ~1 << (int)function;
+			_funcEnable &= ~1 << (int)function;
 	}
 
 	/// <summary>
@@ -148,7 +148,7 @@ public abstract class ModBusServer : IModBusServer
 	/// <returns>해당 기능이 사용 가능하면 true, 그렇지 않으면 false를 반환합니다.</returns>
 	public bool IsFunctionEnable(ModBusFunction function)
 	{
-		return (_func_enable & (1 << (int)function)) != 0;
+		return (_funcEnable & (1 << (int)function)) != 0;
 	}
 
 	/// <summary>
